@@ -1,0 +1,389 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>مشاهدات الطلاب | AMG</title>
+    <link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@400;500;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+    <style>
+        :root { --primary-color: #6C5CE7; --secondary-color: #A29BFE; --light-color: #F5F6FA; --dark-color: #2D3436; }
+        body { font-family: 'Tajawal', sans-serif; background-color: var(--light-color); margin: 0; padding: 0; color: var(--dark-color); }
+        
+        /* Navigation Bar */
+        .navbar {
+            background-color: white;
+            padding: 15px;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.05);
+            display: flex;
+            justify-content: center;
+            gap: 15px;
+            flex-wrap: wrap;
+            margin-bottom: 20px;
+            align-items: center;
+        }
+        .nav-btn {
+            text-decoration: none;
+            color: var(--dark-color);
+            padding: 10px 20px;
+            border-radius: 8px;
+            font-weight: bold;
+            background: #f0f0f5;
+            transition: 0.3s;
+            border: 1px solid #ddd;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        .nav-btn:hover, .nav-btn.active { background: var(--primary-color); color: white; border-color: var(--primary-color); }
+
+        .teacher-select-container { margin-left: 20px; padding-left: 20px; border-left: 2px solid #eee; display: flex; align-items: center; gap: 10px;}
+        #globalTeacherSelect { padding: 8px; border-radius: 5px; border: 1px solid var(--primary-color); font-weight: bold; color: var(--primary-color); font-family: 'Tajawal'; cursor: pointer; }
+
+        .container { max-width: 800px; margin: 0 auto; padding: 0 20px 20px 20px; } /* تم تقليل العرض */
+        
+        header {
+            background-color: var(--primary-color); color: white; padding: 20px;
+            border-radius: 15px; text-align: center;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1); display: flex; justify-content: space-between; align-items: center;
+        }
+        
+        /* Search Box */
+        .search-container { margin-top: 20px; position: relative; }
+        .search-container input { width: 100%; padding: 12px 40px 12px 15px; border: 1px solid #ddd; border-radius: 8px; font-size: 15px; box-sizing: border-box; }
+        .search-container i { position: absolute; right: 15px; top: 50%; transform: translateY(-50%); color: #888; }
+
+        /* Students Table */
+        #students-list { background: white; padding: 20px; border-radius: 10px; box-shadow: 0 2px 5px rgba(0,0,0,0.1); margin-top: 20px; min-height: 300px; }
+        table { width: 100%; border-collapse: collapse; margin-top: 5px; }
+        th, td { padding: 15px; text-align: right; border-bottom: 1px solid #eee; }
+        th { background-color: #f8f9fa; color: var(--primary-color); font-weight: bold; }
+        tr:hover { background-color: #f1f1f1; }
+        
+        .view-btn {
+            background-color: var(--primary-color); color: white;
+            border: none; padding: 8px 20px; border-radius: 5px;
+            cursor: pointer; font-size: 14px; font-weight: bold;
+            transition: 0.2s; display: flex; align-items: center; gap: 5px;
+        }
+        .view-btn:hover { opacity: 0.9; transform: translateY(-1px); }
+
+        /* Modal Styles */
+        .modal {
+            display: none; position: fixed; z-index: 1000; left: 0; top: 0;
+            width: 100%; height: 100%; overflow: auto;
+            background-color: rgba(0,0,0,0.5);
+            align-items: center; justify-content: center;
+        }
+        .modal-content {
+            background-color: #fff; margin: auto; padding: 25px;
+            border-radius: 10px; width: 90%; max-width: 600px;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.3);
+            position: relative; top: 50px;
+            max-height: 80vh; display: flex; flex-direction: column;
+        }
+        .modal-header { display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #eee; padding-bottom: 15px; margin-bottom: 15px; }
+        .modal-header h3 { margin: 0; color: var(--primary-color); }
+        .close-modal { font-size: 24px; cursor: pointer; color: #888; font-weight: bold; }
+        .close-modal:hover { color: #333; }
+        
+        .logs-container { overflow-y: auto; flex: 1; }
+        .log-item {
+            background: #f9f9f9; padding: 12px; margin-bottom: 8px;
+            border-radius: 6px; border-right: 4px solid var(--secondary-color);
+            display: flex; justify-content: space-between; align-items: center;
+        }
+        .log-info { display: flex; flex-direction: column; }
+        .log-title { font-weight: bold; font-size: 15px; color: #333; }
+        .log-date { font-size: 13px; color: #666; margin-top: 4px; direction: ltr; text-align: right; }
+        
+        .status-msg { text-align: center; padding: 20px; color: #777; }
+        #page-wrapper { display: none; }
+    </style>
+</head>
+<body>
+
+    <div id="page-wrapper">
+        <div class="navbar no-print">
+            <a href="activation_stats.html" class="nav-btn"><i class="fas fa-users"></i> الطلاب</a>
+            <a href="view.html" class="nav-btn active"><i class="fas fa-eye"></i> المشاهدات</a>
+            <a href="exam_degrees.html" class="nav-btn"><i class="fas fa-poll"></i> نتائج الامتحانات</a>
+            <a href="Move_lec.html" class="nav-btn"><i class="fas fa-exchange-alt"></i> نقل المحاضرات</a>
+            <a href="add_lec.html" class="nav-btn"><i class="fas fa-upload"></i> رفع محاضرات</a>
+
+            <div class="teacher-select-container">
+                <i class="fas fa-chalkboard-teacher" style="color:var(--primary-color)"></i>
+                <select id="globalTeacherSelect" onchange="changeGlobalTeacher(this.value)">
+                    </select>
+            </div>
+        </div>
+
+        <div class="container">
+            <header>
+                <div id="welcome-msg">مرحباً...</div>
+                <h2>سجل مشاهدات الطلاب - <span id="currentTeacherName"></span></h2>
+                <button onclick="logout()" class="action-btn" style="background:#E74C3C; padding: 6px 15px; border:none; border-radius:5px; color:white; cursor:pointer;">خروج</button>
+            </header>
+
+            <div class="search-container">
+                <i class="fas fa-search"></i>
+                <input type="text" id="searchInput" placeholder="بحث باسم الطالب..." onkeyup="filterUsers()">
+            </div>
+
+            <div id="students-list">
+                <table id="usersTable">
+                    <thead>
+                        <tr>
+                            <th width="10%">#</th>
+                            <th width="60%">اسم الطالب</th>
+                            <th width="30%">المشاهدات</th>
+                        </tr>
+                    </thead>
+                    <tbody id="tableBody">
+                        <tr><td colspan="3" class="status-msg">جاري تحميل الطلاب...</td></tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <div id="viewsModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3 id="modalTitle">مشاهدات الطالب</h3>
+                <span class="close-modal" onclick="closeModal()">&times;</span>
+            </div>
+            <div id="modalBody" class="logs-container">
+                <div class="status-msg">جاري التحميل...</div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://www.gstatic.com/firebasejs/9.6.10/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.6.10/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.6.10/firebase-database-compat.js"></script>
+
+    <script>
+        const firebaseConfig = {
+            apiKey: 'AIzaSyCdqYrVFspJ4rZwidfaPtc9PYpNlQQm09k',
+            authDomain: 'amgg-81ac3.firebaseapp.com',
+            databaseURL: 'https://amgg-81ac3-default-rtdb.firebaseio.com',
+            projectId: 'amgg-81ac3',
+            storageBucket: 'amgg-81ac3.firebasestorage.app',
+            messagingSenderId: '284879336757',
+            appId: '1:284879336757:web:1f42836c2382d11b73087c'
+        };
+        firebase.initializeApp(firebaseConfig);
+        const db = firebase.database();
+        const auth = firebase.auth();
+
+        let allUsers = [];
+        let activeTeacher = localStorage.getItem('selectedTeacher');
+
+        // ================= Security Guard =================
+        auth.onAuthStateChanged(async user => {
+            if (user) {
+                try {
+                    const adminSnap = await db.ref(`admins/${user.uid}`).once('value');
+                    const teacherSnap = await db.ref(`tea/${user.uid}`).once('value');
+
+                    if (adminSnap.exists()) {
+                        document.getElementById('welcome-msg').innerText = "مرحباً، المشرف العام";
+                        setupTeacherSelector(null, true);
+                    } else if (teacherSnap.exists()) {
+                        const rawVal = teacherSnap.val();
+                        const teachersList = rawVal.split('.').map(t => t.trim());
+                        document.getElementById('welcome-msg').innerText = `مرحباً بك`;
+                        setupTeacherSelector(teachersList, false);
+                    } else {
+                        alert('غير مصرح لك بالدخول');
+                        auth.signOut();
+                        window.location.href = 'index.html';
+                        return;
+                    }
+                    document.getElementById('page-wrapper').style.display = 'block';
+                } catch (e) {
+                    console.error(e);
+                    alert('خطأ في الاتصال بالقاعدة');
+                }
+            } else {
+                window.location.href = 'index.html';
+            }
+        });
+
+        function setupTeacherSelector(teachers, isAdmin) {
+            const select = document.getElementById('globalTeacherSelect');
+            select.innerHTML = '';
+            
+            if (isAdmin) {
+                for(let i=1; i<=25; i++) {
+                    const t = `مدرس ${i}`;
+                    const opt = document.createElement('option');
+                    opt.value = t; opt.textContent = t;
+                    select.appendChild(opt);
+                }
+                if (!activeTeacher) activeTeacher = 'مدرس 1';
+            } else {
+                teachers.forEach(t => {
+                    const opt = document.createElement('option');
+                    opt.value = t; opt.textContent = t;
+                    select.appendChild(opt);
+                });
+                if (!activeTeacher || !teachers.includes(activeTeacher)) {
+                    activeTeacher = teachers[0];
+                }
+            }
+            
+            select.value = activeTeacher;
+            localStorage.setItem('selectedTeacher', activeTeacher);
+            document.getElementById('currentTeacherName').innerText = activeTeacher;
+            fetchUsers();
+        }
+
+        window.changeGlobalTeacher = function(val) {
+            activeTeacher = val;
+            localStorage.setItem('selectedTeacher', val);
+            document.getElementById('currentTeacherName').innerText = activeTeacher;
+            fetchUsers();
+        }
+
+        // ================= Fetch Users =================
+        async function fetchUsers() {
+            document.getElementById('tableBody').innerHTML = '<tr><td colspan="3" class="status-msg">جاري تحميل البيانات...</td></tr>';
+            try {
+                const snapshot = await db.ref('users').once('value');
+                const data = snapshot.val() || {};
+                
+                allUsers = [];
+                for (const [uid, userData] of Object.entries(data)) {
+                    // تصفية الطلاب حسب المدرس المختار حالياً
+                    if (userData.year !== activeTeacher) {
+                        continue;
+                    }
+
+                    allUsers.push({
+                        uid: uid,
+                        name: userData.fullName || 'بدون اسم'
+                    });
+                }
+                
+                renderUsers(allUsers);
+
+            } catch (error) {
+                console.error(error);
+                document.getElementById('tableBody').innerHTML = `<tr><td colspan="3" class="status-msg" style="color:red">خطأ: ${error.message}</td></tr>`;
+            }
+        }
+
+        function renderUsers(usersList) {
+            const tbody = document.getElementById('tableBody');
+            tbody.innerHTML = '';
+            
+            if (usersList.length === 0) {
+                tbody.innerHTML = `<tr><td colspan="3" class="status-msg">لا يوجد طلاب للمدرس ${activeTeacher}</td></tr>`;
+                return;
+            }
+
+            let count = 0;
+            usersList.forEach(user => {
+                count++;
+                const tr = document.createElement('tr');
+                tr.innerHTML = `
+                    <td>${count}</td>
+                    <td style="font-size:16px;"><strong>${user.name}</strong></td>
+                    <td>
+                        <button class="view-btn" onclick="openLogsModal('${user.uid}', '${user.name}')">
+                            <i class="fas fa-eye"></i> عرض المشاهدات
+                        </button>
+                    </td>
+                `;
+                tbody.appendChild(tr);
+            });
+        }
+
+        function filterUsers() {
+            const term = document.getElementById('searchInput').value.toLowerCase();
+            const filtered = allUsers.filter(u => u.name.toLowerCase().includes(term));
+            renderUsers(filtered);
+        }
+
+        // ================= Modal Logic (Logs) =================
+        const modal = document.getElementById('viewsModal');
+        const modalBody = document.getElementById('modalBody');
+        const modalTitle = document.getElementById('modalTitle');
+
+        async function openLogsModal(uid, studentName) {
+            modal.style.display = 'flex';
+            modalTitle.innerText = `مشاهدات: ${studentName}`;
+            modalBody.innerHTML = '<div class="status-msg"><i class="fas fa-spinner fa-spin"></i> جاري تحميل السجل...</div>';
+
+            try {
+                const logsSnap = await db.ref(`lecture_access_logs/${uid}`).once('value');
+                const logsData = logsSnap.val();
+
+                if (!logsData) {
+                    modalBody.innerHTML = '<div class="status-msg">لا توجد سجلات مشاهدة.</div>';
+                    return;
+                }
+
+                let logsArray = [];
+                for (const [key, log] of Object.entries(logsData)) {
+                    // فلترة المشاهدات حسب المدرس المختار
+                    if (log.yearKey !== activeTeacher) {
+                        continue;
+                    }
+                    logsArray.push(log);
+                }
+
+                if (logsArray.length === 0) {
+                    modalBody.innerHTML = `<div class="status-msg">لا توجد مشاهدات خاصة بـ ${activeTeacher}.</div>`;
+                    return;
+                }
+
+                // ترتيب: الأحدث أولاً
+                logsArray.sort((a, b) => b.timestamp - a.timestamp);
+
+                let html = '';
+                logsArray.forEach(log => {
+                    const dateObj = new Date(log.timestamp);
+                    const dateStr = dateObj.toLocaleDateString('ar-EG');
+                    const timeStr = dateObj.toLocaleTimeString('ar-EG', {hour: '2-digit', minute:'2-digit'});
+
+                    html += `
+                        <div class="log-item">
+                            <div class="log-info">
+                                <span class="log-title"><i class="fas fa-play-circle" style="color:var(--primary-color); margin-left:5px;"></i> ${log.lectureTitle || 'عنوان غير معروف'}</span>
+                            </div>
+                            <div class="log-date">
+                                <div>${dateStr}</div>
+                                <div>${timeStr}</div>
+                            </div>
+                        </div>
+                    `;
+                });
+
+                modalBody.innerHTML = html;
+
+            } catch (error) {
+                console.error(error);
+                modalBody.innerHTML = `<div class="status-msg" style="color:red">حدث خطأ: ${error.message}</div>`;
+            }
+        }
+
+        function closeModal() {
+            modal.style.display = 'none';
+        }
+
+        window.onclick = function(event) {
+            if (event.target == modal) {
+                closeModal();
+            }
+        }
+
+        function logout() {
+            localStorage.removeItem('selectedTeacher');
+            auth.signOut().then(() => window.location.href = 'index.html');
+        }
+    </script>
+</body>
+</html>

@@ -1,0 +1,358 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>سجل تفعيلات الطلاب | AMG</title>
+    <link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@400;500;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+    <style>
+        :root { --primary-color: #6C5CE7; --secondary-color: #A29BFE; --light-color: #F5F6FA; --dark-color: #2D3436; }
+        body { font-family: 'Tajawal', sans-serif; background-color: var(--light-color); margin: 0; padding: 0; color: var(--dark-color); }
+        
+        /* Navigation Bar */
+        .navbar {
+            background-color: white;
+            padding: 15px;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.05);
+            display: flex;
+            justify-content: center;
+            gap: 15px;
+            flex-wrap: wrap;
+            margin-bottom: 20px;
+        }
+        .nav-btn {
+            text-decoration: none;
+            color: var(--dark-color);
+            padding: 10px 20px;
+            border-radius: 8px;
+            font-weight: bold;
+            background: #f0f0f5;
+            transition: 0.3s;
+            border: 1px solid #ddd;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        .nav-btn:hover, .nav-btn.active { background: var(--primary-color); color: white; border-color: var(--primary-color); }
+
+        .container { max-width: 1200px; margin: 0 auto; padding: 0 20px 20px 20px; }
+        
+        header {
+            background-color: var(--primary-color); color: white; padding: 20px;
+            border-radius: 15px; text-align: center;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1); display: flex; justify-content: space-between; align-items: center;
+        }
+        
+        /* Filters Section */
+        .filters {
+            background: white; padding: 20px; border-radius: 10px; margin-top: 20px;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1); display: flex; gap: 15px; flex-wrap: wrap; align-items: flex-end;
+        }
+        .filter-group { flex: 1; min-width: 200px; }
+        .filter-group label { display: block; margin-bottom: 5px; font-weight: bold; color: #555; }
+        .filter-group input, .filter-group select { width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 5px; font-size: 14px; }
+        
+        .action-btn { padding: 10px 20px; border: none; border-radius: 5px; cursor: pointer; font-weight: bold; color: white; background-color: var(--primary-color); transition: 0.3s; }
+        .action-btn:hover { opacity: 0.9; }
+
+        /* Search Box */
+        .search-container { width: 100%; margin-top: 15px; position: relative; }
+        .search-container input { width: 100%; padding: 12px 40px 12px 15px; border: 1px solid #ddd; border-radius: 8px; font-size: 15px; }
+        .search-container i { position: absolute; right: 15px; top: 50%; transform: translateY(-50%); color: #888; }
+
+        /* Table Section */
+        #report-content { background: white; padding: 20px; border-radius: 10px; box-shadow: 0 2px 5px rgba(0,0,0,0.1); min-height: 400px; margin-top: 20px; }
+        table { width: 100%; border-collapse: collapse; margin-top: 15px; }
+        th, td { padding: 12px 15px; text-align: right; border-bottom: 1px solid #eee; }
+        th { background-color: #f8f9fa; color: var(--primary-color); font-weight: bold; }
+        tr:hover { background-color: #f1f1f1; }
+        
+        .print-header { display: none; text-align: center; margin-bottom: 20px; }
+        .print-header h2 { margin: 0; color: var(--primary-color); }
+        .status-msg { text-align: center; padding: 20px; color: #777; }
+
+        #page-wrapper { display: none; }
+
+        @media print {
+            .no-print { display: none !important; }
+            .print-header { display: block; }
+            body { background: white; }
+            .container { max-width: 100%; margin: 0; padding: 0; }
+            #report-content { box-shadow: none; }
+        }
+    </style>
+</head>
+<body>
+
+    <div id="page-wrapper">
+        <div class="navbar no-print">
+            <a href="activation_stats.html" class="nav-btn active"><i class="fas fa-chart-line"></i> سجل التفعيلات</a>
+            <a href="exam_degrees.html" class="nav-btn"><i class="fas fa-poll"></i> نتائج الامتحانات</a>
+            <a href="Move_lec.html" class="nav-btn"><i class="fas fa-exchange-alt"></i> نقل المحاضرات</a>
+            <a href="add_lec.html" class="nav-btn"><i class="fas fa-upload"></i> رفع محاضرات</a>
+        </div>
+
+        <div class="container">
+            <header class="no-print">
+                <div id="welcome-msg">مرحباً...</div>
+                <h2>سجل تفعيلات الطلاب</h2>
+                <button onclick="logout()" class="action-btn" style="background:#E74C3C; padding: 5px 15px; font-size: 12px;">خروج</button>
+            </header>
+
+            <div class="filters no-print">
+                <div class="filter-group">
+                    <label>تاريخ التفعيل من:</label>
+                    <input type="date" id="startDate" onchange="filterAndRender()">
+                </div>
+                <div class="filter-group">
+                    <label>تاريخ التفعيل إلى:</label>
+                    <input type="date" id="endDate" onchange="filterAndRender()">
+                </div>
+                <div class="filter-group" id="teacherFilterDiv">
+                    <label>المدرس:</label>
+                    <select id="teacherSelect" onchange="filterAndRender()">
+                        <option value="all">عرض الكل</option>
+                    </select>
+                </div>
+                
+                <div class="search-container">
+                    <i class="fas fa-search"></i>
+                    <input type="text" id="searchInput" placeholder="بحث باسم الطالب، الإيميل، أو رقم الهاتف..." onkeyup="filterAndRender()">
+                </div>
+
+                <div style="width: 100%; margin-top: 15px;">
+                    <button class="action-btn" onclick="filterAndRender()" style="width: 100%;">تحديث البيانات</button>
+                </div>
+            </div>
+
+            <div id="report-content">
+                <div class="print-header">
+                    <h2>تقرير تفعيلات الشهور - AMG</h2>
+                    <p id="reportPeriodText"></p>
+                </div>
+                
+                <table id="dataTable">
+                    <thead>
+                        <tr>
+                            <th width="5%">#</th>
+                            <th width="20%">اسم الطالب</th>
+                            <th width="15%">رقم الهاتف</th> <th width="15%">المدرس</th>
+                            <th width="20%">الشهر المفعل</th>
+                            <th width="25%">وقت التفعيل (المحسوب)</th>
+                        </tr>
+                    </thead>
+                    <tbody id="tableBody">
+                        <tr><td colspan="6" class="status-msg">جاري تحميل البيانات...</td></tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://www.gstatic.com/firebasejs/9.6.10/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.6.10/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.6.10/firebase-database-compat.js"></script>
+
+    <script>
+        const firebaseConfig = {
+            apiKey: 'AIzaSyCdqYrVFspJ4rZwidfaPtc9PYpNlQQm09k',
+            authDomain: 'amgg-81ac3.firebaseapp.com',
+            databaseURL: 'https://amgg-81ac3-default-rtdb.firebaseio.com',
+            projectId: 'amgg-81ac3',
+            storageBucket: 'amgg-81ac3.firebasestorage.app',
+            messagingSenderId: '284879336757',
+            appId: '1:284879336757:web:1f42836c2382d11b73087c'
+        };
+        firebase.initializeApp(firebaseConfig);
+        const db = firebase.database();
+        const auth = firebase.auth();
+
+        let rawUsers = {}, rawMonths = {}, rawAccess = {};
+        let teacherNames = new Set(), monthMap = {}; 
+        let currentTeacher = null;
+        const THIRTY_DAYS_MS = 30 * 24 * 60 * 60 * 1000;
+
+        // ================= SECURITY GUARD =================
+        auth.onAuthStateChanged(async user => {
+            if (user) {
+                try {
+                    const adminSnap = await db.ref(`admins/${user.uid}`).once('value');
+                    const teacherSnap = await db.ref(`tea/${user.uid}`).once('value');
+
+                    if (adminSnap.exists()) {
+                        document.getElementById('welcome-msg').innerText = "مرحباً، المشرف العام";
+                        document.getElementById('page-wrapper').style.display = 'block';
+                        initPage();
+                    } else if (teacherSnap.exists()) {
+                        currentTeacher = teacherSnap.val();
+                        document.getElementById('welcome-msg').innerText = `مرحباً، ${currentTeacher}`;
+                        document.getElementById('page-wrapper').style.display = 'block';
+                        document.getElementById('teacherFilterDiv').style.display = 'none';
+                        initPage();
+                    } else {
+                        alert('غير مصرح لك بالدخول');
+                        auth.signOut();
+                        window.location.href = 'index.html';
+                    }
+                } catch (e) {
+                    console.error(e);
+                    alert('خطأ في الاتصال');
+                }
+            } else {
+                window.location.href = 'index.html';
+            }
+        });
+
+        async function initPage() {
+            const today = new Date();
+            const firstDay = new Date(today.getFullYear(), today.getMonth(), 1);
+            document.getElementById('startDate').valueAsDate = firstDay;
+            document.getElementById('endDate').valueAsDate = today;
+
+            try {
+                const [usersSnap, monthsSnap, accessSnap] = await Promise.all([
+                    db.ref('users').once('value'),
+                    db.ref('months').once('value'),
+                    db.ref('student_month_access').once('value')
+                ]);
+
+                rawUsers = usersSnap.val() || {};
+                rawMonths = monthsSnap.val() || {};
+                rawAccess = accessSnap.val() || {};
+
+                processMonthsData();
+                populateTeacherFilter();
+                filterAndRender(); 
+
+            } catch (error) {
+                console.error("Error loading data:", error);
+                document.getElementById('tableBody').innerHTML = `<tr><td colspan="6" class="status-msg" style="color:red">خطأ: ${error.message}</td></tr>`;
+            }
+        }
+
+        function processMonthsData() {
+            for (const [teacher, monthsObj] of Object.entries(rawMonths)) {
+                if (currentTeacher && teacher !== currentTeacher) continue;
+
+                teacherNames.add(teacher);
+                for (const [mId, mData] of Object.entries(monthsObj)) {
+                    monthMap[mId] = { teacher: teacher, name: mData.name };
+                }
+            }
+        }
+
+        function populateTeacherFilter() {
+            if (currentTeacher) return;
+
+            const select = document.getElementById('teacherSelect');
+            select.innerHTML = '<option value="all">عرض الكل</option>';
+            teacherNames.forEach(tName => {
+                const opt = document.createElement('option');
+                opt.value = tName;
+                opt.textContent = tName;
+                select.appendChild(opt);
+            });
+        }
+
+        function filterAndRender() {
+            const tableBody = document.getElementById('tableBody');
+            tableBody.innerHTML = ''; 
+
+            const startVal = document.getElementById('startDate').value;
+            const endVal = document.getElementById('endDate').value;
+            let selectedTeacher = document.getElementById('teacherSelect').value;
+            const searchTerm = document.getElementById('searchInput').value.toLowerCase().trim();
+
+            if (currentTeacher) selectedTeacher = currentTeacher;
+
+            if (!startVal || !endVal) {
+                tableBody.innerHTML = '<tr><td colspan="6" class="status-msg">يرجى تحديد التواريخ</td></tr>';
+                return;
+            }
+
+            const rangeStart = new Date(startVal + 'T00:00:00').getTime();
+            const rangeEnd = new Date(endVal + 'T23:59:59').getTime();
+            document.getElementById('reportPeriodText').innerText = `من ${startVal} إلى ${endVal}`;
+
+            let count = 0;
+            let rowsHTML = '';
+            let allRowsData = [];
+
+            // المنطق القديم: التكرار على سجلات الوصول (student_month_access)
+            for (const [userId, userVisits] of Object.entries(rawAccess)) {
+                const userData = rawUsers[userId];
+                const userName = userData ? userData.fullName : 'مستخدم محذوف';
+                const userEmail = userData ? userData.email : userId;
+                // إضافة رقم الهاتف
+                const userPhone = userData ? (userData.phoneNumber || 'غير متوفر') : '---';
+
+                for (const [monthId, expiryTimestamp] of Object.entries(userVisits)) {
+                    // المعادلة: تاريخ التفعيل = تاريخ الانتهاء - 30 يوم
+                    const activationTimestamp = expiryTimestamp - THIRTY_DAYS_MS;
+
+                    if (activationTimestamp >= rangeStart && activationTimestamp <= rangeEnd) {
+                        let teacherName = 'غير معروف';
+                        let monthName = 'غير معروف';
+
+                        if (monthMap[monthId]) {
+                            teacherName = monthMap[monthId].teacher;
+                            monthName = monthMap[monthId].name;
+                        }
+
+                        // فلتر المدرس
+                        if (selectedTeacher !== 'all' && teacherName !== selectedTeacher) continue;
+                        if (currentTeacher && teacherName !== currentTeacher) continue;
+
+                        // فلتر البحث
+                        if (searchTerm) {
+                            const searchStr = `${userName} ${userEmail} ${userPhone}`.toLowerCase();
+                            if (!searchStr.includes(searchTerm)) continue;
+                        }
+
+                        allRowsData.push({
+                            userName, userEmail, userPhone,
+                            teacherName, monthName, activationTimestamp, userId
+                        });
+                    }
+                }
+            }
+
+            // ترتيب البيانات حسب تاريخ التفعيل (الأحدث أولاً)
+            allRowsData.sort((a, b) => b.activationTimestamp - a.activationTimestamp);
+
+            allRowsData.forEach(row => {
+                count++;
+                const dateStr = new Date(row.activationTimestamp).toLocaleString('ar-EG', {
+                    year: 'numeric', month: 'numeric', day: 'numeric',
+                    hour: 'numeric', minute: 'numeric'
+                });
+
+                rowsHTML += `
+                    <tr>
+                        <td>${count}</td>
+                        <td>
+                            <strong>${row.userName}</strong><br>
+                            <span style="font-size:12px; color:#777;">${row.userEmail}</span>
+                        </td>
+                        <td><span style="direction:ltr; display:inline-block;">${row.userPhone}</span></td>
+                        <td>${row.teacherName}</td>
+                        <td>${row.monthName}</td>
+                        <td style="direction:ltr; text-align:right;">${dateStr}</td>
+                    </tr>
+                `;
+            });
+
+            if (count === 0) {
+                tableBody.innerHTML = '<tr><td colspan="6" class="status-msg">لا توجد عمليات تفعيل مطابقة لهذه الفترة</td></tr>';
+            } else {
+                tableBody.innerHTML = rowsHTML;
+            }
+        }
+
+        function logout() {
+            auth.signOut().then(() => window.location.href = 'index.html');
+        }
+    </script>
+</body>
+</html>

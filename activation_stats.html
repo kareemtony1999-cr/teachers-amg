@@ -1,0 +1,376 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>بيانات الطلاب | AMG</title>
+    <link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@400;500;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+    <style>
+        :root { --primary-color: #6C5CE7; --secondary-color: #A29BFE; --light-color: #F5F6FA; --dark-color: #2D3436; }
+        body { font-family: 'Tajawal', sans-serif; background-color: var(--light-color); margin: 0; padding: 0; color: var(--dark-color); }
+        
+        /* --- تنسيقات الشريط العلوي --- */
+        .navbar {
+            background-color: white; padding: 15px; box-shadow: 0 2px 5px rgba(0,0,0,0.05);
+            display: flex; justify-content: center; gap: 10px; flex-wrap: wrap; margin-bottom: 20px; align-items: center;
+        }
+        .nav-btn {
+            text-decoration: none; color: var(--dark-color); padding: 10px 15px; border-radius: 8px;
+            font-weight: bold; background: #f0f0f5; transition: 0.3s; border: 1px solid #ddd;
+            display: flex; align-items: center; gap: 8px; font-size: 14px; white-space: nowrap;
+        }
+        .nav-btn:hover, .nav-btn.active { background: var(--primary-color); color: white; border-color: var(--primary-color); }
+
+        /* ستايل قائمة اختيار المدرس */
+        .teacher-select-container { 
+            margin-left: 10px; padding-left: 10px; border-left: 2px solid #eee; 
+            display: flex; align-items: center; gap: 8px;
+        }
+        #globalTeacherSelect { padding: 8px; border-radius: 5px; border: 1px solid var(--primary-color); font-weight: bold; color: var(--primary-color); font-family: 'Tajawal'; cursor: pointer; }
+
+        .container { max-width: 1200px; margin: 0 auto; padding: 0 15px 20px 15px; }
+        
+        header {
+            background-color: var(--primary-color); color: white; padding: 20px;
+            border-radius: 15px; text-align: center;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1); display: flex; justify-content: space-between; align-items: center;
+            flex-wrap: wrap; gap: 10px;
+        }
+        
+        /* --- أدوات التحكم (البحث) --- */
+        .controls { background: white; padding: 15px; border-radius: 10px; margin-top: 20px; box-shadow: 0 2px 5px rgba(0,0,0,0.1); }
+        .search-box { position: relative; margin-bottom: 10px; }
+        .search-box input { width: 100%; padding: 12px 40px 12px 15px; border: 1px solid #ddd; border-radius: 8px; font-size: 15px; box-sizing: border-box; }
+        .search-box i { position: absolute; right: 15px; top: 50%; transform: translateY(-50%); color: #888; }
+        
+        .action-btn { padding: 12px 20px; border: none; border-radius: 5px; cursor: pointer; font-weight: bold; color: white; background-color: var(--primary-color); transition: 0.3s; font-size: 14px; }
+        .action-btn:hover { opacity: 0.9; }
+
+        /* --- تنسيقات الجدول والمنطقة المحيطة --- */
+        #report-content { 
+            background: white; padding: 15px; border-radius: 10px; 
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1); min-height: 400px; margin-top: 20px;
+            /* [هام للموبايل] السماح بالتمرير الأفقي للجدول */
+            overflow-x: auto; 
+        }
+        
+        table { width: 100%; border-collapse: collapse; margin-top: 5px; min-width: 700px; /* زيادة العرض الأدنى قليلاً لاستيعاب الشهور */ }
+        th, td { padding: 12px 10px; text-align: right; border-bottom: 1px solid #eee; font-size: 14px; vertical-align: middle; }
+        th { background-color: #f8f9fa; color: var(--primary-color); font-weight: bold; white-space: nowrap; }
+        tr:hover { background-color: #f1f1f1; }
+        
+        .status-msg { text-align: center; padding: 20px; color: #777; }
+        #page-wrapper { display: none; }
+        
+        .date-badge { 
+            background-color: #e0f7fa; color: #006064; padding: 4px 8px; 
+            border-radius: 4px; font-size: 12px; font-weight: bold; 
+            direction: ltr; display: inline-block; white-space: nowrap;
+        }
+        
+        /* ستايل جديد لأسماء الشهور */
+        .month-badge {
+            background-color: #f3e5f5; color: #7b1fa2; padding: 3px 8px;
+            border-radius: 12px; font-size: 12px; font-weight: bold;
+            display: inline-block; margin: 2px; border: 1px solid #e1bee7;
+        }
+        .no-date { color: #999; font-size: 12px; }
+
+        /* --- تحسينات الموبايل (Media Queries) --- */
+        @media (max-width: 768px) {
+            .navbar { justify-content: flex-start; overflow-x: auto; padding-bottom: 10px; } /* شريط تمرير للأزرار */
+            .teacher-select-container { border-left: none; margin-left: 0; padding-left: 0; width: 100%; margin-top: 10px; border-top: 1px solid #eee; padding-top: 10px; }
+            #globalTeacherSelect { width: 100%; }
+            
+            header { flex-direction: column; text-align: center; }
+            header h2 { font-size: 18px; margin: 10px 0; }
+            
+            .controls { padding: 10px; }
+            .action-btn { width: 100%; margin-top: 5px; }
+            
+            th, td { padding: 10px 5px; font-size: 13px; }
+        }
+    </style>
+</head>
+<body>
+
+    <div id="page-wrapper">
+        <div class="navbar">
+            <a href="activation_stats.html" class="nav-btn active"><i class="fas fa-users"></i> الطلاب</a>
+            
+            <a href="view.html" class="nav-btn"><i class="fas fa-eye"></i> المشاهدات</a>
+            
+            <a href="exam_degrees.html" class="nav-btn"><i class="fas fa-poll"></i> الامتحانات</a>
+            <a href="create_exam.html" class="nav-btn"><i class="fas fa-file-signature"></i> إنشاء امتحان</a>
+            <a href="Move_lec.html" class="nav-btn"><i class="fas fa-exchange-alt"></i> نقل</a>
+            <a href="add_lec.html" class="nav-btn"><i class="fas fa-upload"></i> رفع</a>
+            
+            <div class="teacher-select-container">
+                <i class="fas fa-chalkboard-teacher" style="color:var(--primary-color)"></i>
+                <select id="globalTeacherSelect" onchange="changeGlobalTeacher(this.value)">
+                    </select>
+            </div>
+        </div>
+
+        <div class="container">
+            <header>
+                <div id="welcome-msg">مرحباً...</div>
+                <h2>بيانات الطلاب - <span id="currentTeacherName"></span></h2>
+                <button onclick="logout()" class="action-btn" style="background:#E74C3C; padding: 5px 15px; font-size: 12px; width: auto;">خروج</button>
+            </header>
+
+            <div class="controls">
+                <div class="search-box">
+                    <i class="fas fa-search"></i>
+                    <input type="text" id="searchInput" placeholder="بحث بالاسم، الشهور، أو رقم الهاتف..." onkeyup="filterAndRender()">
+                </div>
+                <button class="action-btn" onclick="initPage()">تحديث البيانات</button>
+            </div>
+
+            <div id="report-content">
+                <table id="dataTable">
+                    <thead>
+                        <tr>
+                            <th width="5%">#</th>
+                            <th width="25%">اسم الطالب</th>
+                            <th width="35%">الشهور المتاحة</th> <th width="15%">رقم الهاتف</th>
+                            <th width="20%">تاريخ آخر تفعيل</th>
+                        </tr>
+                    </thead>
+                    <tbody id="tableBody">
+                        <tr><td colspan="5" class="status-msg">جاري تحميل البيانات...</td></tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://www.gstatic.com/firebasejs/9.6.10/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.6.10/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.6.10/firebase-database-compat.js"></script>
+
+    <script>
+        const firebaseConfig = {
+            apiKey: 'AIzaSyCdqYrVFspJ4rZwidfaPtc9PYpNlQQm09k',
+            authDomain: 'amgg-81ac3.firebaseapp.com',
+            databaseURL: 'https://amgg-81ac3-default-rtdb.firebaseio.com',
+            projectId: 'amgg-81ac3',
+            storageBucket: 'amgg-81ac3.firebasestorage.app',
+            messagingSenderId: '284879336757',
+            appId: '1:284879336757:web:1f42836c2382d11b73087c'
+        };
+        firebase.initializeApp(firebaseConfig);
+        const db = firebase.database();
+        const auth = firebase.auth();
+
+        let allRowsData = [];
+        let activeTeacher = localStorage.getItem('selectedTeacher');
+        let isAdmin = false;
+        const THIRTY_DAYS_MS = 30 * 24 * 60 * 60 * 1000;
+
+        auth.onAuthStateChanged(async user => {
+            if (user) {
+                try {
+                    const adminSnap = await db.ref(`admins/${user.uid}`).once('value');
+                    const teaSnap = await db.ref(`tea/${user.uid}`).once('value');
+
+                    if (adminSnap.exists()) {
+                        isAdmin = true;
+                        document.getElementById('welcome-msg').innerText = "مرحباً، المشرف العام";
+                        setupTeacherSelector(null); 
+                    } else if (teaSnap.exists()) {
+                        const rawVal = teaSnap.val();
+                        const teachersList = rawVal.split('.').map(t => t.trim());
+                        document.getElementById('welcome-msg').innerText = `مرحباً بك`;
+                        setupTeacherSelector(teachersList);
+                    } else {
+                        alert('غير مصرح لك بالدخول');
+                        auth.signOut();
+                        window.location.href = 'index.html';
+                        return;
+                    }
+                    document.getElementById('page-wrapper').style.display = 'block';
+                } catch (e) {
+                    console.error(e);
+                    alert('خطأ في الاتصال بالقاعدة');
+                }
+            } else {
+                window.location.href = 'index.html';
+            }
+        });
+
+        function setupTeacherSelector(teachers) {
+            const select = document.getElementById('globalTeacherSelect');
+            select.innerHTML = '';
+            
+            if (isAdmin) {
+                for(let i=1; i<=25; i++) {
+                    const t = `مدرس ${i}`;
+                    const opt = document.createElement('option');
+                    opt.value = t; opt.textContent = t;
+                    select.appendChild(opt);
+                }
+                if (!activeTeacher) activeTeacher = 'مدرس 1';
+            } else {
+                teachers.forEach(t => {
+                    const opt = document.createElement('option');
+                    opt.value = t; opt.textContent = t;
+                    select.appendChild(opt);
+                });
+                
+                if (!activeTeacher || !teachers.includes(activeTeacher)) {
+                    activeTeacher = teachers[0];
+                }
+            }
+            
+            select.value = activeTeacher;
+            localStorage.setItem('selectedTeacher', activeTeacher);
+            document.getElementById('currentTeacherName').innerText = activeTeacher;
+            initPage();
+        }
+
+        window.changeGlobalTeacher = function(val) {
+            activeTeacher = val;
+            localStorage.setItem('selectedTeacher', val);
+            document.getElementById('currentTeacherName').innerText = activeTeacher;
+            initPage();
+        }
+
+        async function initPage() {
+            document.getElementById('tableBody').innerHTML = '<tr><td colspan="5" class="status-msg">جاري تحميل البيانات...</td></tr>';
+            try {
+                const [usersSnap, monthsSnap, accessSnap] = await Promise.all([
+                    db.ref('users').once('value'),
+                    db.ref('months').once('value'), 
+                    db.ref('student_month_access').once('value')
+                ]);
+
+                const usersObj = usersSnap.val() || {};
+                const monthsObj = monthsSnap.val() || {};
+                const accessObj = accessSnap.val() || {};
+
+                // 1. خريطة لربط كود الشهر (ID) باسم الشهر والمدرس الخاص به
+                let monthDetailsMap = {};
+                for (const [tName, tMonths] of Object.entries(monthsObj)) {
+                    for (const [mId, mData] of Object.entries(tMonths)) {
+                        monthDetailsMap[mId] = { 
+                            teacher: tName, 
+                            name: mData.name 
+                        };
+                    }
+                }
+
+                allRowsData = [];
+
+                for (const [uid, userData] of Object.entries(usersObj)) {
+                    // الفلترة: عرض الطالب فقط إذا كان يتبع المدرس المحدد
+                    if (userData.year !== activeTeacher) {
+                        continue; 
+                    }
+
+                    let displayDate = null;
+                    let activeMonthsList = []; // قائمة لتخزين أسماء الشهور المتاحة
+                    const userAccess = accessObj[uid];
+
+                    if (userAccess) {
+                        let latestActivation = 0;
+                        for (const [monthId, expiryDate] of Object.entries(userAccess)) {
+                            // البحث عن تفاصيل الشهر
+                            const monthInfo = monthDetailsMap[monthId];
+                            
+                            // التأكد أن الشهر يتبع المدرس الحالي
+                            if (monthInfo && monthInfo.teacher === activeTeacher) {
+                                // إضافة اسم الشهر للقائمة
+                                activeMonthsList.push(monthInfo.name);
+
+                                // حساب آخر تاريخ تفعيل
+                                const activationDate = expiryDate - THIRTY_DAYS_MS;
+                                if (activationDate > latestActivation) {
+                                    latestActivation = activationDate;
+                                }
+                            }
+                        }
+                        if (latestActivation > 0) displayDate = latestActivation;
+                    }
+
+                    allRowsData.push({
+                        uid: uid,
+                        fullName: userData.fullName || 'بدون اسم',
+                        phone: userData.phoneNumber || '---',
+                        calculatedJoinDate: displayDate,
+                        activeMonths: activeMonthsList // مصفوفة أسماء الشهور
+                    });
+                }
+
+                // الترتيب: المفعلين أولاً
+                allRowsData.sort((a, b) => (b.calculatedJoinDate || 0) - (a.calculatedJoinDate || 0));
+
+                filterAndRender();
+
+            } catch (error) {
+                console.error("Error:", error);
+                document.getElementById('tableBody').innerHTML = `<tr><td colspan="5" class="status-msg" style="color:red">خطأ: ${error.message}</td></tr>`;
+            }
+        }
+
+        function filterAndRender() {
+            const tableBody = document.getElementById('tableBody');
+            const searchTerm = document.getElementById('searchInput').value.toLowerCase().trim();
+            
+            tableBody.innerHTML = '';
+
+            let count = 0;
+            let html = '';
+
+            allRowsData.forEach(row => {
+                // تحويل قائمة الشهور لنص واحد لأغراض البحث
+                const monthsString = row.activeMonths.join(' ');
+                
+                // البحث يشمل الاسم، رقم الهاتف، والشهور
+                const searchString = `${row.fullName} ${row.phone} ${monthsString}`.toLowerCase();
+                
+                if (searchTerm && !searchString.includes(searchTerm)) return;
+
+                count++;
+                
+                // إنشاء HTML للشهور
+                let monthsHtml = '';
+                if (row.activeMonths.length > 0) {
+                    monthsHtml = row.activeMonths.map(m => `<span class="month-badge">${m}</span>`).join('');
+                } else {
+                    monthsHtml = '<span class="no-date">--</span>';
+                }
+
+                // تنسيق التاريخ
+                let dateBadge = '<span class="no-date">غير مفعل</span>';
+                if (row.calculatedJoinDate) {
+                    const dateObj = new Date(row.calculatedJoinDate);
+                    const dateStr = dateObj.toLocaleDateString('ar-EG') + ' ' + dateObj.toLocaleTimeString('ar-EG', {hour: '2-digit', minute:'2-digit'});
+                    dateBadge = `<span class="date-badge">${dateStr}</span>`;
+                }
+
+                html += `
+                    <tr>
+                        <td>${count}</td>
+                        <td style="font-weight:bold;">${row.fullName}</td>
+                        <td>${monthsHtml}</td> <td style="direction:ltr; text-align:right;">${row.phone}</td>
+                        <td>${dateBadge}</td>
+                    </tr>
+                `;
+            });
+
+            if (count === 0) {
+                tableBody.innerHTML = `<tr><td colspan="5" class="status-msg">لا توجد بيانات مطابقة للمدرس: ${activeTeacher}</td></tr>`;
+            } else {
+                tableBody.innerHTML = html;
+            }
+        }
+
+        function logout() {
+            localStorage.removeItem('selectedTeacher');
+            auth.signOut().then(() => window.location.href = 'index.html');
+        }
+    </script>
+</body>
+</html>
