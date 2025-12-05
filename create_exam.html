@@ -11,20 +11,7 @@
         
         body { font-family: 'Tajawal', sans-serif; background-color: var(--light-color); margin: 0; padding: 0; color: var(--dark-color); }
         
-        .navbar {
-            background-color: white; padding: 15px; box-shadow: 0 2px 5px rgba(0,0,0,0.05);
-            display: flex; justify-content: center; gap: 15px; flex-wrap: wrap; margin-bottom: 20px; align-items: center;
-        }
-        .nav-btn {
-            text-decoration: none; color: var(--dark-color); padding: 10px 20px; border-radius: 8px;
-            font-weight: bold; background: #f0f0f5; transition: 0.3s; border: 1px solid #ddd;
-            display: flex; align-items: center; gap: 8px;
-        }
-        .nav-btn:hover { background: var(--primary-color); color: white; border-color: var(--primary-color); }
-
-        .container { 
-            max-width: 800px; margin: 0 auto; padding: 0 20px 40px 20px; 
-        }
+        .container { max-width: 800px; margin: 0 auto; padding: 0 20px 40px 20px; }
         
         header {
             background-color: var(--primary-color); color: white; padding: 20px;
@@ -52,14 +39,14 @@
         .btn-add:hover { background-color: #8c80f7; }
         .btn-save { background-color: var(--success-color); color: white; }
         .btn-save:hover { background-color: #00b38b; }
+        .btn-disabled { background-color: #ccc !important; cursor: not-allowed; }
 
-        .file-upload { margin-top: 10px; }
         .preview-img { max-width: 100%; height: auto; margin-top: 10px; border-radius: 8px; display: none; max-height: 200px; object-fit: contain; }
 
         .loading-overlay {
             position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-            background: rgba(255,255,255,0.8); z-index: 999;
-            display: none; flex-direction: column; justify-content: center; align-items: center;
+            background: rgba(0,0,0,0.8); z-index: 999;
+            display: none; flex-direction: column; justify-content: center; align-items: center; color: white;
         }
         .spinner {
             width: 40px; height: 40px; border: 4px solid #f3f3f3;
@@ -79,11 +66,11 @@
 
     <div class="loading-overlay" id="loadingOverlay">
         <div class="spinner"></div>
-        <p style="margin-top: 10px; font-weight: bold;">جاري حفظ الامتحان ورفع الصور...</p>
+        <p style="margin-top: 10px; font-weight: bold;" id="loadingText">جاري الحفظ...</p>
     </div>
 
     <div style="width: 100%; max-width: 800px; margin: 0 auto; padding-top: 20px;">
-        <a href="activation_stats.html" class="back-btn-top"><i class="fas fa-arrow-right"></i> العودة للرئيسية</a>
+        <a href="#" class="back-btn-top"><i class="fas fa-arrow-right"></i> العودة للرئيسية</a>
     </div>
 
     <div class="container">
@@ -103,8 +90,9 @@
             </div>
             <div class="form-group">
                 <label>السنة الدراسية (المدرس)</label>
-                <select id="yearSelect" class="form-control" onchange="loadMonths(this.value)">
-                    <option value="" disabled selected>-- اختر السنة --</option>
+                <!-- تم تحديث القائمة لتعرض رسالة الخطأ بوضوح -->
+                <select id="yearSelect" class="form-control">
+                    <option value="" disabled selected>-- انتظر تهيئة النظام... --</option>
                 </select>
             </div>
             <div class="form-group">
@@ -121,19 +109,20 @@
             <i class="fas fa-plus"></i> إضافة سؤال جديد
         </button>
 
-        <button class="btn btn-save" onclick="saveExam()">
-            <i class="fas fa-save"></i> حفظ الامتحان
+        <button id="saveBtn" class="btn btn-save btn-disabled" onclick="saveExam()" disabled>
+            <i class="fas fa-save"></i> حفظ الامتحان (يرجى الانتظار...)
         </button>
     </div>
 
-    <script src="https://www.gstatic.com/firebasejs/9.6.10/firebase-app-compat.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/9.6.10/firebase-auth-compat.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/9.6.10/firebase-database-compat.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/9.6.10/firebase-storage-compat.js"></script>
+    <!-- Firebase Logic (Modular SDK v11) -->
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
+        import { getAuth, onAuthStateChanged, signInAnonymously, signInWithCustomToken } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+        import { getDatabase, ref, get, set, child, serverTimestamp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-database.js";
+        import { getStorage, ref as storageRef, uploadBytes, getDownloadURL } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-storage.js";
 
-    <script>
-        // Firebase Config
-        const firebaseConfig = {
+        // 1. إعدادات Firebase الصريحة
+        const myConfig = {
             apiKey: 'AIzaSyCdqYrVFspJ4rZwidfaPtc9PYpNlQQm09k',
             authDomain: 'amgg-81ac3.firebaseapp.com',
             databaseURL: 'https://amgg-81ac3-default-rtdb.firebaseio.com',
@@ -142,69 +131,122 @@
             messagingSenderId: '284879336757',
             appId: '1:284879336757:web:1f42836c2382d11b73087c'
         };
-        firebase.initializeApp(firebaseConfig);
-        const db = firebase.database();
-        const auth = firebase.auth();
-        const storage = firebase.storage();
 
-        let currentTeacher = null; // للمدرس المسجل دخول
+        const configToUse = (typeof __firebase_config !== 'undefined') 
+                            ? JSON.parse(__firebase_config) 
+                            : myConfig;
+
+        let app, auth, db, storage;
+        try {
+            app = initializeApp(configToUse);
+            auth = getAuth(app);
+            db = getDatabase(app);
+            storage = getStorage(app);
+            document.getElementById('yearSelect').innerHTML = '<option disabled selected>-- جاري الاتصال بقاعدة البيانات... --</option>';
+        } catch (error) {
+            console.error("Firebase Init Error:", error);
+            document.getElementById('yearSelect').innerHTML = '<option disabled>خطأ في تهيئة Firebase</option>';
+        }
+
         let questionCounter = 0;
+        let currentUser = null;
 
-        // ================= Auth & Init =================
-        auth.onAuthStateChanged(async user => {
-            if (user) {
-                const adminSnap = await db.ref(`admins/${user.uid}`).once('value');
-                const teaSnap = await db.ref(`tea/${user.uid}`).once('value');
+        window.addQuestionUI = addQuestionUI;
+        window.saveExam = saveExam;
+        window.removeQuestion = removeQuestion;
+        window.previewImage = previewImage;
 
-                const yearSelect = document.getElementById('yearSelect');
-                yearSelect.innerHTML = '<option value="" disabled selected>-- اختر السنة --</option>';
-
-                if (adminSnap.exists()) {
-                    // أدمن: يرى كل المدرسين
-                    for(let i=1; i<=25; i++) {
-                        let t = `مدرس ${i}`;
-                        let opt = document.createElement('option');
-                        opt.value = t; opt.textContent = t;
-                        yearSelect.appendChild(opt);
-                    }
-                } else if (teaSnap.exists()) {
-                    // مدرس: يرى نفسه فقط (أو القائمة المخصصة له)
-                    const val = teaSnap.val();
-                    const teachers = val.split('.').map(t => t.trim());
-                    teachers.forEach(t => {
-                        let opt = document.createElement('option');
-                        opt.value = t; opt.textContent = t;
-                        yearSelect.appendChild(opt);
-                    });
-                    // اختيار تلقائي إذا كان مدرس واحد
-                    if(teachers.length > 0) {
-                        yearSelect.value = teachers[0];
-                        loadMonths(teachers[0]);
-                    }
+        // 2. المصادقة
+        const initAuth = async () => {
+            try {
+                if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) {
+                    await signInWithCustomToken(auth, __initial_auth_token);
                 } else {
-                    alert('غير مصرح لك');
-                    window.location.href = 'index.html';
+                    await signInAnonymously(auth);
                 }
+            } catch(e) { 
+                console.error("Auth failed", e);
+                document.getElementById('yearSelect').innerHTML = '<option disabled>خطأ في تسجيل الدخول</option>';
+            }
+        };
+
+        // ================= مراقبة حالة المستخدم وتحميل البيانات =================
+        onAuthStateChanged(auth, async (user) => {
+            const saveBtn = document.getElementById('saveBtn');
+            const yearSelect = document.getElementById('yearSelect');
+
+            if (user) {
+                currentUser = user;
+                saveBtn.disabled = false;
+                saveBtn.classList.remove('btn-disabled');
+                saveBtn.innerHTML = '<i class="fas fa-save"></i> حفظ الامتحان';
                 
-                // إضافة سؤال افتراضي واحد
-                addQuestionUI();
+                yearSelect.innerHTML = '<option value="" disabled selected>-- جاري التحقق من الصلاحيات (tea)... --</option>';
+                
+                try {
+                     const userTeaRef = ref(db, `tea/${user.uid}`);
+                     const teaSnapshot = await get(userTeaRef);
+                     
+                     if (teaSnapshot.exists()) {
+                         yearSelect.innerHTML = '<option value="" disabled selected>-- اختر السنة/المدرس --</option>';
+                         
+                         const teaVal = teaSnapshot.val();
+                         let teachers = [];
+                         
+                         if (typeof teaVal === 'string') {
+                             teachers = teaVal.split('.').map(t => t.trim()).filter(t => t !== '');
+                         } else {
+                             teachers = [String(teaVal)];
+                         }
+
+                         teachers.forEach(t => {
+                            let opt = document.createElement('option');
+                            opt.value = t; opt.textContent = t;
+                            yearSelect.appendChild(opt);
+                         });
+
+                         yearSelect.addEventListener('change', (e) => loadMonths(e.target.value));
+                         
+                         if (teachers.length === 1) {
+                             yearSelect.value = teachers[0];
+                             loadMonths(teachers[0]);
+                         }
+
+                         addQuestionUI();
+                     } else {
+                         yearSelect.innerHTML = '<option disabled>حسابك غير مسجل كمدرس (tea)</option>';
+                     }
+                } catch (e) {
+                    console.error("Error fetching teacher data:", e);
+                    
+                    // كشف خطأ الصلاحيات وعرض رسالة واضحة
+                    if (e.message && e.message.includes("permission_denied")) {
+                        yearSelect.innerHTML = '<option disabled style="color:red">خطأ: لا تملك صلاحية القراءة (تأكد من Rules)</option>';
+                        alert("عفواً، قاعدة البيانات ترفض الوصول. يرجى التأكد من تعديل الـ Realtime Database Rules في Firebase Console.");
+                    } else {
+                        yearSelect.innerHTML = '<option disabled>حدث خطأ أثناء جلب البيانات</option>';
+                    }
+                }
             } else {
-                window.location.href = 'index.html';
+                yearSelect.innerHTML = '<option disabled>يرجى تسجيل الدخول</option>';
             }
         });
 
-        // ================= Load Months =================
+        initAuth();
+
+        // ================= دالة تحميل الشهور =================
         async function loadMonths(yearKey) {
             const monthSelect = document.getElementById('monthSelect');
             monthSelect.innerHTML = '<option value="" disabled selected>جاري التحميل...</option>';
             monthSelect.disabled = true;
 
             try {
-                const snap = await db.ref(`months/${yearKey}`).once('value');
+                const monthsRef = ref(db, `months/${yearKey}`);
+                const snapshot = await get(monthsRef);
                 monthSelect.innerHTML = '<option value="" disabled selected>-- اختر الشهر --</option>';
-                
-                if (snap.exists()) {
-                    const data = snap.val();
+
+                if (snapshot.exists()) {
+                    const data = snapshot.val();
                     const arr = Object.entries(data).map(([k, v]) => ({id: k, ...v}));
                     arr.sort((a, b) => (a.order || 999) - (b.order || 999));
                     
@@ -219,15 +261,19 @@
                 }
             } catch (e) {
                 console.error(e);
-                monthSelect.innerHTML = '<option disabled>خطأ في التحميل</option>';
+                // التعامل مع أخطاء الصلاحيات في الشهور أيضاً
+                if (e.message && e.message.includes("permission_denied")) {
+                    monthSelect.innerHTML = '<option disabled>خطأ صلاحيات (Rules)</option>';
+                } else {
+                    monthSelect.innerHTML = '<option disabled>خطأ في الاتصال</option>';
+                }
             }
         }
 
-        // ================= Question UI Logic =================
+        // ================= دوال الواجهة =================
         function addQuestionUI() {
             questionCounter++;
             const container = document.getElementById('questionsContainer');
-            
             const div = document.createElement('div');
             div.className = 'card question-card';
             div.setAttribute('data-id', questionCounter);
@@ -237,35 +283,22 @@
                     <span class="question-title">سؤال رقم ${questionCounter}</span>
                     <button class="delete-q-btn" onclick="removeQuestion(this)"><i class="fas fa-trash"></i> حذف</button>
                 </div>
-                
                 <div class="form-group">
                     <input type="text" class="form-control q-text" placeholder="نص السؤال">
                 </div>
-
                 <div class="form-group">
                     <label style="font-size:13px; color:#666;"><i class="fas fa-image"></i> صورة السؤال (اختياري)</label>
                     <input type="file" class="q-image-input" accept="image/*" onchange="previewImage(this)">
                     <img class="preview-img">
                 </div>
-
                 <label style="font-size:14px; font-weight:bold;">الخيارات (اختر الإجابة الصحيحة):</label>
                 <div class="options-grid">
-                    <div class="option-item">
-                        <input type="radio" name="correct_q_${questionCounter}" value="0" checked>
-                        <input type="text" class="q-option" placeholder="الخيار الأول">
-                    </div>
-                    <div class="option-item">
-                        <input type="radio" name="correct_q_${questionCounter}" value="1">
-                        <input type="text" class="q-option" placeholder="الخيار الثاني">
-                    </div>
-                    <div class="option-item">
-                        <input type="radio" name="correct_q_${questionCounter}" value="2">
-                        <input type="text" class="q-option" placeholder="الخيار الثالث">
-                    </div>
-                    <div class="option-item">
-                        <input type="radio" name="correct_q_${questionCounter}" value="3">
-                        <input type="text" class="q-option" placeholder="الخيار الرابع">
-                    </div>
+                    ${[0, 1, 2, 3].map(i => `
+                        <div class="option-item">
+                            <input type="radio" name="correct_q_${questionCounter}" value="${i}" ${i===0 ? 'checked' : ''}>
+                            <input type="text" class="q-option" placeholder="الخيار ${i+1}">
+                        </div>
+                    `).join('')}
                 </div>
             `;
             container.appendChild(div);
@@ -273,7 +306,6 @@
 
         function removeQuestion(btn) {
             btn.closest('.question-card').remove();
-            // إعادة ترقيم الأسئلة اختياري، لكن ليس ضرورياً للكود
         }
 
         function previewImage(input) {
@@ -290,85 +322,104 @@
             }
         }
 
-        // ================= Save Logic =================
+        // ================= دالة الحفظ (مع الرفع الثنائي وتصحيح المسار) =================
         async function saveExam() {
+            if (!currentUser) return alert('يرجى إعادة تسجيل الدخول');
+
             const title = document.getElementById('examTitle').value.trim();
             const duration = document.getElementById('examDuration').value.trim();
             const yearKey = document.getElementById('yearSelect').value;
             const monthKey = document.getElementById('monthSelect').value;
             const qCards = document.querySelectorAll('.question-card');
 
-            // Validation
             if (!title || !duration || !yearKey || !monthKey) {
-                alert('يرجى إدخال جميع البيانات الأساسية (العنوان، المدة، السنة، الشهر)');
-                return;
+                return alert('يرجى التأكد من إدخال البيانات الأساسية.');
             }
             if (qCards.length === 0) {
-                alert('يجب إضافة سؤال واحد على الأقل');
-                return;
+                return alert('يجب إضافة سؤال واحد على الأقل.');
             }
 
-            document.getElementById('loadingOverlay').style.display = 'flex';
+            const loadingOverlay = document.getElementById('loadingOverlay');
+            const loadingText = document.getElementById('loadingText');
+            loadingOverlay.style.display = 'flex';
 
             try {
-                const examId = crypto.randomUUID(); // أو دالة عشوائية بسيطة
+                const examId = Date.now().toString() + '_' + Math.floor(Math.random() * 1000); 
                 const questionsData = [];
 
-                // Loop through questions
                 for (let i = 0; i < qCards.length; i++) {
+                    loadingText.innerText = `جاري رفع السؤال ${i + 1}...`;
+                    
                     const card = qCards[i];
                     const qText = card.querySelector('.q-text').value.trim();
                     const optionsInputs = card.querySelectorAll('.q-option');
                     const correctRadio = card.querySelector('input[type="radio"]:checked');
                     const imageInput = card.querySelector('.q-image-input');
 
-                    if (!qText) throw new Error(`السؤال رقم ${i+1} فارغ`);
+                    if (!qText) throw new Error(`السؤال رقم ${i+1} فارغ.`);
                     
                     const options = [];
                     optionsInputs.forEach(opt => options.push(opt.value.trim()));
-                    if(options.some(o => o === "")) throw new Error(`أكمل جميع الخيارات في السؤال ${i+1}`);
+                    if(options.some(o => o === "")) throw new Error(`أكمل الخيارات في السؤال ${i+1}.`);
 
                     const correctIndex = parseInt(correctRadio.value);
-                    const correctAnswer = options[correctIndex];
+                    const correctAnswerText = options[correctIndex];
 
-                    // Upload Image if exists
                     let imageUrl = null;
+
                     if (imageInput.files.length > 0) {
                         const file = imageInput.files[0];
-                        const storageRef = storage.ref(`exams/${examId}/q_${i}_${Date.now()}.jpg`);
-                        await storageRef.put(file);
-                        imageUrl = await storageRef.getDownloadURL();
+                        const path = `exams/${examId}/question_${i}_${Date.now()}.jpg`;
+                        const imgRef = storageRef(storage, path);
+                        const metadata = { contentType: file.type };
+                        
+                        const snapshot = await uploadBytes(imgRef, file, metadata);
+                        imageUrl = await getDownloadURL(snapshot.ref);
                     }
 
                     const qObj = {
                         question: qText,
                         options: options,
-                        correctAnswer: correctAnswer,
-                        // في الكود القديم (Flutter) كنت تخزن imageUrl إن وجد
+                        correctAnswer: correctAnswerText,
                     };
                     if (imageUrl) qObj.imageUrl = imageUrl;
 
                     questionsData.push(qObj);
                 }
 
-                // Save to Realtime Database
+                loadingText.innerText = 'جاري حفظ بيانات الامتحان...';
+
                 const examData = {
                     title: title,
                     duration: parseInt(duration),
                     monthKey: monthKey,
-                    questions: questionsData
+                    questions: questionsData,
+                    createdAt: serverTimestamp(),
+                    createdBy: currentUser.uid 
                 };
 
-                await db.ref(`${yearKey}/${examId}`).set(examData);
+                // [تصحيح المسار] بناءً على القواعد: exams -> $year -> $examId
+                // المسار الصحيح هو: exams/YearName/ExamId
+                // بدلاً من: YearName/ExamId (الذي كان يسبب خطأ Permission Denied في الجذر)
+                await set(ref(db, `exams/${yearKey}/${examId}`), examData);
 
-                alert('تم حفظ الامتحان بنجاح!');
-                window.location.reload();
+                loadingText.innerText = 'تم الحفظ!';
+                setTimeout(() => {
+                    alert('✅ تم حفظ الامتحان بنجاح!');
+                    window.location.reload();
+                }, 1000);
 
             } catch (error) {
-                console.error(error);
-                alert('حدث خطأ: ' + error.message);
+                console.error("Save Error:", error);
+                
+                // تحسين رسالة الخطأ عند الحفظ أيضاً
+                if (error.message && error.message.includes("permission_denied")) {
+                    alert('❌ خطأ: تم رفض الحفظ (Permission Denied). يرجى التأكد من أنك تملك صلاحية التعديل على هذه السنة الدراسية.');
+                } else {
+                    alert('❌ خطأ: ' + error.message);
+                }
             } finally {
-                document.getElementById('loadingOverlay').style.display = 'none';
+                loadingOverlay.style.display = 'none';
             }
         }
     </script>
