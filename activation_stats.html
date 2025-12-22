@@ -55,7 +55,7 @@
             overflow-x: auto; 
         }
         
-        table { width: 100%; border-collapse: collapse; margin-top: 5px; min-width: 700px; /* زيادة العرض الأدنى قليلاً لاستيعاب الشهور */ }
+        table { width: 100%; border-collapse: collapse; margin-top: 5px; min-width: 800px; /* زيادة العرض لاستيعاب العمود الجديد */ }
         th, td { padding: 12px 10px; text-align: right; border-bottom: 1px solid #eee; font-size: 14px; vertical-align: middle; }
         th { background-color: #f8f9fa; color: var(--primary-color); font-weight: bold; white-space: nowrap; }
         tr:hover { background-color: #f1f1f1; }
@@ -110,7 +110,7 @@
             <div class="teacher-select-container">
                 <i class="fas fa-chalkboard-teacher" style="color:var(--primary-color)"></i>
                 <select id="globalTeacherSelect" onchange="changeGlobalTeacher(this.value)">
-                    </select>
+                </select>
             </div>
         </div>
 
@@ -124,7 +124,7 @@
             <div class="controls">
                 <div class="search-box">
                     <i class="fas fa-search"></i>
-                    <input type="text" id="searchInput" placeholder="بحث بالاسم، الشهور، أو رقم الهاتف..." onkeyup="filterAndRender()">
+                    <input type="text" id="searchInput" placeholder="بحث بالاسم، الكود، الشهور، أو رقم الهاتف..." onkeyup="filterAndRender()">
                 </div>
                 <button class="action-btn" onclick="initPage()">تحديث البيانات</button>
             </div>
@@ -134,13 +134,14 @@
                     <thead>
                         <tr>
                             <th width="5%">#</th>
-                            <th width="25%">اسم الطالب</th>
-                            <th width="35%">الشهور المتاحة</th> <th width="15%">رقم الهاتف</th>
+                            <th width="20%">اسم الطالب</th>
+                            <th width="10%">الكود</th> <th width="30%">الشهور المتاحة</th> 
+                            <th width="15%">رقم الهاتف</th>
                             <th width="20%">تاريخ آخر تفعيل</th>
                         </tr>
                     </thead>
                     <tbody id="tableBody">
-                        <tr><td colspan="5" class="status-msg">جاري تحميل البيانات...</td></tr>
+                        <tr><td colspan="6" class="status-msg">جاري تحميل البيانات...</td></tr>
                     </tbody>
                 </table>
             </div>
@@ -239,17 +240,20 @@
         }
 
         async function initPage() {
-            document.getElementById('tableBody').innerHTML = '<tr><td colspan="5" class="status-msg">جاري تحميل البيانات...</td></tr>';
+            document.getElementById('tableBody').innerHTML = '<tr><td colspan="6" class="status-msg">جاري تحميل البيانات...</td></tr>';
             try {
-                const [usersSnap, monthsSnap, accessSnap] = await Promise.all([
+                // تمت إضافة جلب الأكواد
+                const [usersSnap, monthsSnap, accessSnap, codesSnap] = await Promise.all([
                     db.ref('users').once('value'),
                     db.ref('months').once('value'), 
-                    db.ref('student_month_access').once('value')
+                    db.ref('student_month_access').once('value'),
+                    db.ref('codes').once('value')
                 ]);
 
                 const usersObj = usersSnap.val() || {};
                 const monthsObj = monthsSnap.val() || {};
                 const accessObj = accessSnap.val() || {};
+                const codesObj = codesSnap.val() || {};
 
                 // 1. خريطة لربط كود الشهر (ID) باسم الشهر والمدرس الخاص به
                 let monthDetailsMap = {};
@@ -259,6 +263,14 @@
                             teacher: tName, 
                             name: mData.name 
                         };
+                    }
+                }
+
+                // 2. خريطة لربط الطالب بالكود
+                let userCodeMap = {};
+                for (const [codeKey, codeData] of Object.entries(codesObj)) {
+                    if (codeData.usedBy) {
+                        userCodeMap[codeData.usedBy] = codeKey;
                     }
                 }
 
@@ -295,12 +307,16 @@
                         if (latestActivation > 0) displayDate = latestActivation;
                     }
 
+                    // جلب الكود
+                    const studentCode = userCodeMap[uid] || '---';
+
                     allRowsData.push({
                         uid: uid,
                         fullName: userData.fullName || 'بدون اسم',
                         phone: userData.phoneNumber || '---',
+                        code: studentCode, // إضافة الكود للبيانات
                         calculatedJoinDate: displayDate,
-                        activeMonths: activeMonthsList // مصفوفة أسماء الشهور
+                        activeMonths: activeMonthsList
                     });
                 }
 
@@ -311,7 +327,7 @@
 
             } catch (error) {
                 console.error("Error:", error);
-                document.getElementById('tableBody').innerHTML = `<tr><td colspan="5" class="status-msg" style="color:red">خطأ: ${error.message}</td></tr>`;
+                document.getElementById('tableBody').innerHTML = `<tr><td colspan="6" class="status-msg" style="color:red">خطأ: ${error.message}</td></tr>`;
             }
         }
 
@@ -328,8 +344,8 @@
                 // تحويل قائمة الشهور لنص واحد لأغراض البحث
                 const monthsString = row.activeMonths.join(' ');
                 
-                // البحث يشمل الاسم، رقم الهاتف، والشهور
-                const searchString = `${row.fullName} ${row.phone} ${monthsString}`.toLowerCase();
+                // البحث يشمل الاسم، الكود، رقم الهاتف، والشهور
+                const searchString = `${row.fullName} ${row.code} ${row.phone} ${monthsString}`.toLowerCase();
                 
                 if (searchTerm && !searchString.includes(searchTerm)) return;
 
@@ -355,14 +371,15 @@
                     <tr>
                         <td>${count}</td>
                         <td style="font-weight:bold;">${row.fullName}</td>
-                        <td>${monthsHtml}</td> <td style="direction:ltr; text-align:right;">${row.phone}</td>
+                        <td style="font-family:monospace; font-weight:bold;">${row.code}</td> <td>${monthsHtml}</td> 
+                        <td style="direction:ltr; text-align:right;">${row.phone}</td>
                         <td>${dateBadge}</td>
                     </tr>
                 `;
             });
 
             if (count === 0) {
-                tableBody.innerHTML = `<tr><td colspan="5" class="status-msg">لا توجد بيانات مطابقة للمدرس: ${activeTeacher}</td></tr>`;
+                tableBody.innerHTML = `<tr><td colspan="6" class="status-msg">لا توجد بيانات مطابقة للمدرس: ${activeTeacher}</td></tr>`;
             } else {
                 tableBody.innerHTML = html;
             }
