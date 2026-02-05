@@ -1,438 +1,586 @@
 <!DOCTYPE html>
 <html lang="ar" dir="rtl">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>نشر البوستات | AMG</title>
-<link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@400;500;700&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
-<style>
-    /* CSS Styles - Same Design Language */
-    :root { --primary-color: #6C5CE7; --secondary-color: #A29BFE; --light-color: #F5F6FA; --dark-color: #2D3436; --success-color: #00CE9F; --danger-color: #E74C3C; }
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>نشر البوستات | AMG</title>
+    <link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@400;500;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        /* --- Design System & Variables (Same as Lecture Page) --- */
+        :root {
+            --primary-color: #4F46E5;
+            --primary-hover: #4338ca;
+            --secondary-color: #818cf8;
+            --background-color: #F3F4F6;
+            --surface-color: #FFFFFF;
+            --text-primary: #1F2937;
+            --text-secondary: #6B7280;
+            --border-color: #E5E7EB;
+            --success-color: #10B981;
+            --danger-color: #EF4444;
+            --danger-hover: #DC2626;
+            --shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+            --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+            --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+            --radius: 12px;
+            --transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
 
-    body {
-        font-family: 'Tajawal', sans-serif;
-        background: linear-gradient(to bottom, #f0f0f5, #ffffff);
-        margin: 0;
-        padding: 20px;
-        display: flex;
-        justify-content: center;
-        align-items: center;
-        min-height: 100vh;
-        flex-direction: column;
-    }
-    .container {
-        width: 100%;
-        max-width: 600px;
-        padding: 24px;
-        background-color: #fff;
-        border-radius: 12px;
-        box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
-        direction: rtl;
-        margin: 0 auto;
-    }
-    .appbar {
-        background-color: var(--primary-color);
-        color: white;
-        padding: 16px;
-        border-radius: 8px 8px 0 0;
-        text-align: center;
-        margin: -24px -24px 24px -24px;
-    }
-    .appbar h1 { margin: 0; font-size: 24px; }
-    
-    .input-group { margin-bottom: 20px; }
-    .input-group label { display: block; margin-bottom: 8px; font-weight: bold; color: var(--dark-color); }
-    .input-group input, .input-group select, .input-group textarea {
-        width: 100%; padding: 12px; border: 1px solid #ccc; border-radius: 8px; box-sizing: border-box; font-size: 16px; font-family: 'Tajawal';
-    }
-    .input-group textarea { resize: vertical; min-height: 100px; }
+        [data-theme="dark"] {
+            --primary-color: #6366f1;
+            --primary-hover: #818cf8;
+            --secondary-color: #4f46e5;
+            --background-color: #111827;
+            --surface-color: #1F2937;
+            --text-primary: #F9FAFB;
+            --text-secondary: #D1D5DB;
+            --border-color: #374151;
+            --shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.3);
+            --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.4);
+        }
 
-    .file-picker {
-        display: flex; align-items: center; gap: 10px; margin-bottom: 10px; background: #f9f9f9; padding: 10px; border-radius: 8px; border: 1px dashed #ccc;
-    }
-    .file-picker label {
-        background-color: var(--secondary-color); color: white; padding: 8px 12px; border-radius: 6px; cursor: pointer; margin: 0; font-size: 14px;
-    }
-    .file-picker label:hover { background-color: #8C80F7; }
-    .file-picker input[type="file"] { display: none; }
-    .file-picker span { font-size: 13px; color: #555; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+        * { box-sizing: border-box; outline: none; }
 
-    .button {
-        width: 100%; padding: 15px; border: none; border-radius: 8px; font-size: 18px; font-weight: bold; color: white; cursor: pointer; transition: 0.3s;
-    }
-    .upload-btn { background-color: var(--success-color); }
-    .upload-btn:hover { background-color: #00B38B; }
-    
-    /* Loading Overlay */
-    .progress-overlay {
-        position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-        background: rgba(0, 0, 0, 0.85); z-index: 2000;
-        display: none; flex-direction: column; justify-content: center; align-items: center; color: white;
-    }
-    .progress-container {
-        width: 80%; max-width: 400px; background: rgba(255, 255, 255, 0.1); padding: 30px; border-radius: 15px; text-align: center; backdrop-filter: blur(5px);
-    }
-    .progress-bar-track {
-        width: 100%; height: 15px; background-color: rgba(255, 255, 255, 0.2); border-radius: 10px; overflow: hidden; margin: 20px 0;
-    }
-    .progress-bar-fill {
-        height: 100%; width: 0%; background: linear-gradient(90deg, #00CE9F, #6C5CE7); border-radius: 10px; transition: width 0.3s ease;
-    }
-    .progress-percentage { font-size: 32px; font-weight: bold; font-family: monospace; }
-    .progress-status { font-size: 16px; opacity: 0.9; }
+        body {
+            font-family: 'Tajawal', sans-serif;
+            background-color: var(--background-color);
+            color: var(--text-primary);
+            margin: 0; padding: 0;
+            min-height: 100vh;
+            display: flex; flex-direction: column; align-items: center;
+            transition: background-color 0.3s ease, color 0.3s ease;
+        }
 
-    .back-btn-top {
-        align-self: flex-start; margin-bottom: 20px; margin-right: 10%; text-decoration: none; color: white; background: var(--primary-color); padding: 10px 20px; border-radius: 5px; font-weight: bold;
-    }
+        /* Top Bar */
+        .top-bar {
+            width: 100%; max-width: 800px;
+            display: flex; justify-content: space-between; align-items: center;
+            padding: 20px; margin-bottom: 10px;
+        }
 
-    /* History Section */
-    .history-section { margin-top: 30px; border-top: 2px solid #eee; padding-top: 20px; }
-    .post-item {
-        background: #fff; border: 1px solid #eee; border-radius: 8px; padding: 15px; margin-bottom: 15px; box-shadow: 0 2px 5px rgba(0,0,0,0.05); position: relative;
-    }
-    .post-header { display: flex; justify-content: space-between; margin-bottom: 10px; font-size: 12px; color: #777; }
-    .post-content { margin-bottom: 10px; font-size: 15px; white-space: pre-wrap; }
-    .delete-post-btn {
-        background: #ffebeb; color: var(--danger-color); border: none; padding: 5px 10px; border-radius: 5px; cursor: pointer; font-size: 12px;
-    }
-</style>
+        .back-btn-top {
+            text-decoration: none; color: var(--text-secondary);
+            font-weight: 500; display: flex; align-items: center; gap: 8px;
+            transition: var(--transition); padding: 8px 16px;
+            border-radius: var(--radius); background: var(--surface-color);
+            box-shadow: var(--shadow-sm);
+        }
+        .back-btn-top:hover { color: var(--primary-color); transform: translateX(-5px); }
+
+        .theme-toggle {
+            background: var(--surface-color); border: 1px solid var(--border-color);
+            color: var(--text-primary); padding: 10px; border-radius: 50%;
+            cursor: pointer; box-shadow: var(--shadow-sm); transition: var(--transition);
+            width: 40px; height: 40px; display: flex; align-items: center; justify-content: center;
+        }
+        .theme-toggle:hover { background: var(--border-color); }
+
+        /* Container & Layout */
+        .container {
+            width: 95%; max-width: 800px;
+            background-color: var(--surface-color);
+            border-radius: var(--radius);
+            box-shadow: var(--shadow-lg);
+            padding: 0; margin-bottom: 40px;
+            overflow: hidden; border: 1px solid var(--border-color);
+        }
+
+        .appbar {
+            background: linear-gradient(135deg, var(--primary-color), var(--secondary-color));
+            color: white; padding: 30px 20px;
+            text-align: center;
+        }
+        .appbar h1 { margin: 0; font-size: 28px; font-weight: 800; letter-spacing: -0.5px; }
+
+        .content-body { padding: 30px; }
+
+        /* Inputs */
+        .input-group { margin-bottom: 20px; }
+        .input-group label {
+            display: block; margin-bottom: 8px; font-weight: 500;
+            color: var(--text-primary); font-size: 14px;
+        }
+        .input-group input, .input-group select, .input-group textarea {
+            width: 100%; padding: 14px;
+            border: 2px solid var(--border-color);
+            border-radius: var(--radius);
+            background-color: var(--background-color);
+            color: var(--text-primary);
+            font-size: 15px; font-family: inherit;
+            transition: var(--transition);
+        }
+        .input-group textarea {
+            resize: vertical; min-height: 120px; line-height: 1.5;
+        }
+        .input-group input:focus, .input-group select:focus, .input-group textarea:focus {
+            border-color: var(--primary-color);
+            box-shadow: 0 0 0 4px rgba(79, 70, 229, 0.1);
+            background-color: var(--surface-color);
+        }
+
+        /* File Pickers Grid */
+        .file-grid {
+            display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin-bottom: 20px;
+        }
+        @media (max-width: 600px) { .file-grid { grid-template-columns: 1fr; } }
+
+        .file-upload-wrapper {
+            position: relative; width: 100%; height: 100px;
+            border: 2px dashed var(--border-color); border-radius: var(--radius);
+            display: flex; flex-direction: column; align-items: center; justify-content: center;
+            cursor: pointer; transition: var(--transition);
+            background-color: rgba(0,0,0,0.02);
+        }
+        .file-upload-wrapper:hover {
+            border-color: var(--primary-color); background-color: rgba(79, 70, 229, 0.05);
+        }
+        .file-upload-wrapper input[type="file"] {
+            position: absolute; width: 100%; height: 100%; opacity: 0; cursor: pointer;
+        }
+        .file-icon { font-size: 24px; color: var(--text-secondary); margin-bottom: 8px; }
+        .file-label { color: var(--primary-color); font-weight: 600; font-size: 13px; }
+        .file-name {
+            font-size: 11px; color: var(--text-secondary); margin-top: 5px;
+            max-width: 90%; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+        }
+
+        /* Button */
+        .button {
+            width: 100%; padding: 16px; border: none; border-radius: var(--radius);
+            font-size: 16px; font-weight: 700; color: white; cursor: pointer;
+            transition: var(--transition); display: flex; align-items: center; justify-content: center; gap: 10px;
+            position: relative; overflow: hidden;
+        }
+        .upload-btn { background-color: var(--success-color); box-shadow: 0 4px 15px rgba(16, 185, 129, 0.3); }
+        .upload-btn:hover { background-color: #059669; transform: translateY(-2px); }
+
+        /* History Section */
+        .divider { height: 1px; background-color: var(--border-color); margin: 30px 0; }
+        h3 {
+            color: var(--text-primary); font-size: 20px; border-right: 4px solid var(--primary-color);
+            padding-right: 12px; margin-bottom: 20px;
+        }
+
+        .post-item {
+            background: var(--surface-color); border: 1px solid var(--border-color);
+            border-radius: var(--radius); padding: 20px; margin-bottom: 15px;
+            box-shadow: var(--shadow-sm); transition: var(--transition);
+        }
+        .post-item:hover { transform: translateY(-2px); box-shadow: var(--shadow-md); }
+        
+        .post-header {
+            display: flex; justify-content: space-between; margin-bottom: 12px;
+            font-size: 13px; color: var(--text-secondary); border-bottom: 1px solid var(--border-color);
+            padding-bottom: 10px;
+        }
+        .post-content {
+            margin-bottom: 15px; font-size: 16px; white-space: pre-wrap; line-height: 1.6;
+        }
+        .post-meta {
+            display: flex; gap: 10px; font-size: 13px; margin-bottom: 15px;
+        }
+        .badge {
+            padding: 4px 10px; border-radius: 20px; font-weight: 600; font-size: 12px;
+        }
+        .badge-img { background: rgba(16, 185, 129, 0.1); color: var(--success-color); }
+        .badge-pdf { background: rgba(239, 68, 68, 0.1); color: var(--danger-color); }
+
+        .btn-sm-danger {
+            background-color: rgba(239, 68, 68, 0.1); color: var(--danger-color);
+            border: none; padding: 8px 16px; border-radius: 6px; cursor: pointer;
+            font-weight: 600; transition: var(--transition); font-family: inherit;
+        }
+        .btn-sm-danger:hover { background-color: var(--danger-color); color: white; }
+
+        /* Overlay */
+        .progress-overlay {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0, 0, 0, 0.9); z-index: 9999; display: none;
+            flex-direction: column; justify-content: center; align-items: center;
+            backdrop-filter: blur(10px);
+        }
+        .progress-card {
+            background: var(--surface-color); padding: 40px; border-radius: 20px;
+            width: 90%; max-width: 400px; text-align: center;
+            box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1);
+        }
+        .circular-chart {
+            display: block; margin: 0 auto 20px auto; max-width: 100px; max-height: 100px;
+        }
+        .circle-bg { fill: none; stroke: var(--border-color); stroke-width: 3.8; }
+        .circle {
+            fill: none; stroke-width: 2.8; stroke-linecap: round;
+            transition: stroke-dasharray 0.3s ease; stroke: var(--primary-color);
+        }
+        .percentage {
+            fill: var(--text-primary); font-family: 'Tajawal', sans-serif;
+            font-weight: bold; font-size: 0.5em; text-anchor: middle;
+        }
+        .progress-status { color: var(--text-secondary); font-size: 15px; margin-top: 10px; }
+
+    </style>
 </head>
 <body>
 
-<!-- Overlay -->
-<div id="uploadOverlay" class="progress-overlay">
-    <div class="progress-container">
-        <div class="progress-percentage" id="overlayPercentage">0%</div>
-        <div class="progress-bar-track">
-            <div id="overlayProgressBar" class="progress-bar-fill"></div>
-        </div>
-        <div class="progress-status" id="overlayStatusText">جاري التحضير...</div>
+    <div class="top-bar">
+        <a href="activation_stats.html" class="back-btn-top">
+            <i class="fas fa-arrow-right"></i> <span>الرئيسية</span>
+        </a>
+        <button class="theme-toggle" id="themeToggle" title="تبديل الوضع">
+            <i class="fas fa-moon"></i>
+        </button>
     </div>
-</div>
 
-<div style="width: 100%; max-width: 600px; text-align: left;">
-    <a href="activation_stats.html" class="back-btn-top" style="display: inline-block; margin-bottom: 10px;"><i class="fas fa-arrow-right"></i> الرئيسية</a>
-</div>
-
-<div id="page-content" style="display: none; width: 100%;">
-    <div class="container">
-        <div class="appbar">
-            <h1>نشر بوست جديد</h1>
-        </div>
-
-        <div class="input-group">
-            <label for="serverSelect">اختر السيرفر (السنة الدراسية)</label>
-            <select id="serverSelect">
-                <option value="" disabled selected>جاري التحميل...</option>
-            </select>
-        </div>
-
-        <div class="input-group">
-            <label for="postContent">محتوى البوست</label>
-            <textarea id="postContent" placeholder="اكتب ما تريد نشره للطلاب هنا..."></textarea>
-        </div>
-
-        <div class="input-group">
-            <div class="file-picker">
-                <label for="imageFile"><i class="fas fa-image"></i> صورة (اختياري)</label>
-                <input type="file" id="imageFile" accept="image/*">
-                <span id="imageFileName">لم يتم اختيار صورة</span>
-            </div>
-            <div class="file-picker">
-                <label for="pdfFile"><i class="fas fa-file-pdf"></i> ملف PDF (اختياري)</label>
-                <input type="file" id="pdfFile" accept="application/pdf">
-                <span id="pdfFileName">لم يتم اختيار ملف</span>
-            </div>
-        </div>
-
-        <button id="publishBtn" class="button upload-btn">نشر البوست</button>
-
-        <div class="history-section">
-            <h3>بوستاتي السابقة (لهذا السيرفر)</h3>
-            <div id="postsList">
-                <p style="text-align: center; color: #999;">جاري تحميل البوستات...</p>
-            </div>
+    <div id="uploadOverlay" class="progress-overlay">
+        <div class="progress-card">
+            <svg viewBox="0 0 36 36" class="circular-chart">
+                <path class="circle-bg" d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" />
+                <path id="circlePath" class="circle" stroke-dasharray="0, 100" d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" />
+                <text x="18" y="20.35" class="percentage" id="overlayPercentage">0%</text>
+            </svg>
+            <h3 style="justify-content:center; border:none; margin:0; font-size: 1.2rem;">جاري النشر</h3>
+            <div class="progress-status" id="overlayStatusText">يرجى الانتظار...</div>
         </div>
     </div>
-</div>
 
-<script src="https://www.gstatic.com/firebasejs/10.12.3/firebase-app-compat.js"></script>
-<script src="https://www.gstatic.com/firebasejs/10.12.3/firebase-auth-compat.js"></script>
-<script src="https://www.gstatic.com/firebasejs/10.12.3/firebase-database-compat.js"></script>
-<script src="https://www.gstatic.com/firebasejs/10.12.3/firebase-storage-compat.js"></script>
+    <div id="page-content" style="display: none; width: 100%; display:flex; justify-content:center;">
+        <div class="container">
+            <div class="appbar">
+                <h1>نشر بوست جديد</h1>
+            </div>
 
-<script>
-    // Configuration
-    const firebaseConfig = {
-        apiKey: 'AIzaSyCdqYrVFspJ4rZwidfaPtc9PYpNlQQm09k',
-        appId: '1:284879336757:web:1f42836c2382d11b73087c',
-        messagingSenderId: '284879336757',
-        projectId: 'amgg-81ac3',
-        authDomain: 'amgg-81ac3.firebaseapp.com',
-        databaseURL: 'https://amgg-81ac3-default-rtdb.firebaseio.com',
-        storageBucket: 'amgg-81ac3.firebasestorage.app',
-        measurementId: 'G-FMZW8S6WES',
-    };
+            <div class="content-body">
+                <div class="input-group">
+                    <label for="serverSelect">اختر السيرفر (السنة الدراسية)</label>
+                    <select id="serverSelect">
+                        <option value="" disabled selected>جاري التحميل...</option>
+                    </select>
+                </div>
 
-    const app = firebase.initializeApp(firebaseConfig);
-    const auth = firebase.auth();
-    const db = firebase.database();
-    const storage = firebase.storage();
+                <div class="input-group">
+                    <label for="postContent">محتوى البوست</label>
+                    <textarea id="postContent" placeholder="اكتب ما تريد نشره للطلاب هنا..."></textarea>
+                </div>
 
-    let allowedServers = [];
-    let currentUser = null;
+                <div class="file-grid">
+                    <div class="file-upload-wrapper" onclick="document.getElementById('imageFile').click()">
+                        <input type="file" id="imageFile" accept="image/*">
+                        <i class="fas fa-image file-icon"></i>
+                        <span class="file-label">إضافة صورة (اختياري)</span>
+                        <span id="imageFileName" class="file-name">لم يتم اختيار ملف</span>
+                    </div>
+                    
+                    <div class="file-upload-wrapper" onclick="document.getElementById('pdfFile').click()">
+                        <input type="file" id="pdfFile" accept="application/pdf">
+                        <i class="fas fa-file-pdf file-icon" style="color: #EF4444;"></i>
+                        <span class="file-label" style="color: #EF4444;">ملف PDF</span>
+                        <span id="pdfFileName" class="file-name">لم يتم اختيار ملف</span>
+                    </div>
+                </div>
 
-    // UI Elements
-    const serverSelect = document.getElementById('serverSelect');
-    const imageFile = document.getElementById('imageFile');
-    const pdfFile = document.getElementById('pdfFile');
-    const publishBtn = document.getElementById('publishBtn');
-    
-    // Overlay UI
-    const uploadOverlay = document.getElementById('uploadOverlay');
-    const overlayProgressBar = document.getElementById('overlayProgressBar');
-    const overlayPercentage = document.getElementById('overlayPercentage');
-    const overlayStatusText = document.getElementById('overlayStatusText');
+                <button id="publishBtn" class="button upload-btn">
+                    <i class="fas fa-paper-plane"></i> نشر البوست
+                </button>
 
-    // File Name Updates
-    imageFile.addEventListener('change', (e) => document.getElementById('imageFileName').textContent = e.target.files[0]?.name || 'لم يتم اختيار صورة');
-    pdfFile.addEventListener('change', (e) => document.getElementById('pdfFileName').textContent = e.target.files[0]?.name || 'لم يتم اختيار ملف');
+                <div class="divider"></div>
 
-    // Reload posts when server changes
-    serverSelect.addEventListener('change', () => {
-        loadMyPosts();
-    });
+                <h3><i class="fas fa-history"></i> بوستاتي السابقة (لهذا السيرفر)</h3>
+                <div id="postsList">
+                    <p style="text-align: center; color: var(--text-secondary);">جاري تحميل البوستات...</p>
+                </div>
+            </div>
+        </div>
+    </div>
 
-    // ================= Auth & Permissions =================
-    auth.onAuthStateChanged(async user => {
-        if (user) {
-            currentUser = user;
-            try {
-                const adminSnap = await db.ref(`admins/${user.uid}`).once('value');
-                const teaSnap = await db.ref(`tea/${user.uid}`).once('value');
+    <script src="https://www.gstatic.com/firebasejs/10.12.3/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.12.3/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.12.3/firebase-database-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.12.3/firebase-storage-compat.js"></script>
 
-                if (adminSnap.exists()) {
-                    allowedServers = [];
-                    for(let i=1; i<=25; i++) allowedServers.push(`مدرس ${i}`);
-                    initUI();
-                } else if (teaSnap.exists()) {
-                    const val = teaSnap.val();
-                    allowedServers = String(val).split('.').map(t => t.trim());
-                    initUI();
-                } else {
-                    alert('غير مصرح لك بالدخول.');
-                    window.location.href = 'index.html';
-                }
-            } catch(e) { console.error(e); }
-        } else {
-            window.location.href = 'index.html';
-        }
-    });
-
-    function initUI() {
-        document.getElementById('page-content').style.display = 'block';
+    <script>
+        // --- Dark Mode Logic ---
+        const themeToggle = document.getElementById('themeToggle');
+        const icon = themeToggle.querySelector('i');
         
-        serverSelect.innerHTML = '<option value="" disabled selected>-- اختر السيرفر --</option>';
-        allowedServers.forEach(srv => {
-            const opt = document.createElement('option');
-            opt.value = srv;
-            opt.textContent = srv;
-            serverSelect.appendChild(opt);
+        if(localStorage.getItem('theme') === 'dark') {
+            document.documentElement.setAttribute('data-theme', 'dark');
+            icon.classList.remove('fa-moon'); icon.classList.add('fa-sun');
+        }
+
+        themeToggle.addEventListener('click', () => {
+            if (document.documentElement.getAttribute('data-theme') === 'dark') {
+                document.documentElement.removeAttribute('data-theme');
+                localStorage.setItem('theme', 'light');
+                icon.classList.remove('fa-sun'); icon.classList.add('fa-moon');
+            } else {
+                document.documentElement.setAttribute('data-theme', 'dark');
+                localStorage.setItem('theme', 'dark');
+                icon.classList.remove('fa-moon'); icon.classList.add('fa-sun');
+            }
         });
 
-        if(allowedServers.length === 1) {
-            serverSelect.value = allowedServers[0];
-            loadMyPosts();
-        }
-    }
+        // --- Firebase Config ---
+        const firebaseConfig = {
+            apiKey: 'AIzaSyCdqYrVFspJ4rZwidfaPtc9PYpNlQQm09k',
+            appId: '1:284879336757:web:1f42836c2382d11b73087c',
+            messagingSenderId: '284879336757',
+            projectId: 'amgg-81ac3',
+            authDomain: 'amgg-81ac3.firebaseapp.com',
+            databaseURL: 'https://amgg-81ac3-default-rtdb.firebaseio.com',
+            storageBucket: 'amgg-81ac3.firebasestorage.app',
+            measurementId: 'G-FMZW8S6WES',
+        };
 
-    // ================= Upload Logic (Matched to Flutter) =================
-    publishBtn.addEventListener('click', async () => {
-        const content = document.getElementById('postContent').value.trim();
-        const server = serverSelect.value;
-        const img = imageFile.files[0];
-        const pdf = pdfFile.files[0];
+        const app = firebase.initializeApp(firebaseConfig);
+        const auth = firebase.auth();
+        const db = firebase.database();
+        const storage = firebase.storage();
 
-        if (!server) return alert('يرجى اختيار السيرفر (السنة الدراسية)');
-        if (!content && !img && !pdf) return alert('يجب كتابة نص أو رفع ملف على الأقل');
+        let allowedServers = [];
+        let currentUser = null;
 
-        // Show Loading
-        uploadOverlay.style.display = 'flex';
-        overlayProgressBar.style.width = '0%';
-        overlayPercentage.textContent = '0%';
-        
-        try {
-            // 1. Create a reference to get the ID (Same strategy as Flutter's push().key)
-            // Path: posts/{year}/{postId}
-            const postRef = db.ref(`posts/${server}`).push();
-            const postId = postRef.key;
+        // UI Refs
+        const serverSelect = document.getElementById('serverSelect');
+        const imageFile = document.getElementById('imageFile');
+        const pdfFile = document.getElementById('pdfFile');
+        const publishBtn = document.getElementById('publishBtn');
+        const postsList = document.getElementById('postsList');
 
-            let imageUrls = [];
-            let pdfUrl = null;
-            
-            // 2. Upload Image (Path: posts/{year}/images/{postId}/{filename})
-            if (img) {
-                overlayStatusText.textContent = 'جاري رفع الصورة...';
-                const imgRef = storage.ref(`posts/${server}/images/${postId}/${img.name}`);
-                const imgTask = imgRef.put(img);
-                
-                await new Promise((resolve, reject) => {
-                    imgTask.on('state_changed', 
-                        (snap) => {
-                            const p = (snap.bytesTransferred / snap.totalBytes) * 45; 
-                            overlayProgressBar.style.width = `${p}%`;
-                            overlayPercentage.textContent = `${Math.round(p)}%`;
-                        },
-                        reject,
-                        async () => {
-                            const url = await imgTask.snapshot.ref.getDownloadURL();
-                            imageUrls.push(url); // Add to list to match Flutter's List<String>
-                            resolve();
-                        }
-                    );
-                });
+        // Overlay Refs
+        const uploadOverlay = document.getElementById('uploadOverlay');
+        const circlePath = document.getElementById('circlePath');
+        const overlayPercentage = document.getElementById('overlayPercentage');
+        const overlayStatusText = document.getElementById('overlayStatusText');
+
+        // File Selection Listener
+        imageFile.addEventListener('change', (e) => document.getElementById('imageFileName').textContent = e.target.files[0]?.name || 'لم يتم اختيار ملف');
+        pdfFile.addEventListener('change', (e) => document.getElementById('pdfFileName').textContent = e.target.files[0]?.name || 'لم يتم اختيار ملف');
+
+        serverSelect.addEventListener('change', () => loadMyPosts());
+
+        // --- Auth & Init ---
+        auth.onAuthStateChanged(async user => {
+            if (user) {
+                currentUser = user;
+                try {
+                    const adminSnap = await db.ref(`admins/${user.uid}`).once('value');
+                    const teaSnap = await db.ref(`tea/${user.uid}`).once('value');
+
+                    if (adminSnap.exists()) {
+                        allowedServers = [];
+                        for(let i=1; i<=25; i++) allowedServers.push(`مدرس ${i}`);
+                        initUI();
+                    } else if (teaSnap.exists()) {
+                        const val = teaSnap.val();
+                        allowedServers = String(val).split('.').map(t => t.trim());
+                        initUI();
+                    } else {
+                        alert('غير مصرح لك بالدخول.');
+                        auth.signOut();
+                        window.location.href = 'index.html';
+                    }
+                } catch(e) { console.error(e); }
+            } else {
+                window.location.href = 'index.html';
             }
+        });
 
-            // 3. Upload PDF (Path: posts/{year}/pdfs/{postId}/{filename})
-            if (pdf) {
-                overlayStatusText.textContent = 'جاري رفع ملف PDF...';
-                const pdfRef = storage.ref(`posts/${server}/pdfs/${postId}/${pdf.name}`);
-                const pdfTask = pdfRef.put(pdf);
-
-                await new Promise((resolve, reject) => {
-                    pdfTask.on('state_changed', 
-                        (snap) => {
-                            const p = 45 + ((snap.bytesTransferred / snap.totalBytes) * 45);
-                            overlayProgressBar.style.width = `${p}%`;
-                            overlayPercentage.textContent = `${Math.round(p)}%`;
-                        },
-                        reject,
-                        async () => {
-                            pdfUrl = await pdfTask.snapshot.ref.getDownloadURL();
-                            resolve();
-                        }
-                    );
-                });
+        function initUI() {
+            document.getElementById('page-content').style.display = 'flex';
+            serverSelect.innerHTML = '<option value="" disabled selected>-- اختر السيرفر --</option>';
+            allowedServers.forEach(srv => {
+                const opt = document.createElement('option');
+                opt.value = srv;
+                opt.textContent = srv;
+                serverSelect.appendChild(opt);
+            });
+            if(allowedServers.length === 1) {
+                serverSelect.value = allowedServers[0];
+                loadMyPosts();
             }
-
-            // 4. Save to Database (Structure matched to Flutter)
-            overlayStatusText.textContent = 'جاري الحفظ في قاعدة البيانات...';
-            overlayProgressBar.style.width = '95%';
-            
-            /* Flutter Object Structure:
-               {
-                 "user": email,
-                 "post": text,
-                 "images": [url1, url2...],
-                 "pdf": url,
-                 "timestamp": ISOString,
-                 "likes": []
-               }
-            */
-            const postData = {
-                user: currentUser.email || "Anonymous",
-                post: content, // Changed from 'body' to 'post'
-                images: imageUrls, // Changed from 'image' string to 'images' list
-                pdf: pdfUrl,
-                timestamp: new Date().toISOString(), // Matched ISO format
-                likes: []
-            };
-
-            await postRef.set(postData);
-
-            overlayProgressBar.style.width = '100%';
-            overlayPercentage.textContent = '100%';
-            alert('تم نشر البوست بنجاح!');
-            
-            // Reset Form
-            document.getElementById('postContent').value = '';
-            imageFile.value = '';
-            pdfFile.value = '';
-            document.getElementById('imageFileName').textContent = 'لم يتم اختيار صورة';
-            document.getElementById('pdfFileName').textContent = 'لم يتم اختيار ملف';
-            
-            uploadOverlay.style.display = 'none';
-            loadMyPosts(); 
-
-        } catch (error) {
-            console.error(error);
-            alert('حدث خطأ: ' + error.message);
-            uploadOverlay.style.display = 'none';
         }
-    });
 
-    // ================= Load Posts =================
-    function loadMyPosts() {
-        const listDiv = document.getElementById('postsList');
-        const server = serverSelect.value;
+        // --- Upload Logic ---
+        publishBtn.addEventListener('click', async () => {
+            const content = document.getElementById('postContent').value.trim();
+            const server = serverSelect.value;
+            const img = imageFile.files[0];
+            const pdf = pdfFile.files[0];
 
-        if(!server) return;
+            if (!server) return alert('يرجى اختيار السيرفر (السنة الدراسية)');
+            if (!content && !img && !pdf) return alert('يجب كتابة نص أو رفع ملف على الأقل');
 
-        listDiv.innerHTML = '<p style="text-align:center; color:#999;">جاري التحميل...</p>';
-        
-        // Listen to the specific server node: posts/{server}
-        db.ref(`posts/${server}`).limitToLast(50).once('value', snapshot => {
-            listDiv.innerHTML = '';
-            
-            if (!snapshot.exists()) {
-                listDiv.innerHTML = '<p style="text-align:center">لا توجد بوستات منشورة في هذا السيرفر.</p>';
+            // *** SIZE CHECK FOR PDF (10MB) ***
+            const MAX_PDF_SIZE = 10 * 1024 * 1024; // 10MB in Bytes
+            if (pdf && pdf.size > MAX_PDF_SIZE) {
+                alert(`حجم ملف PDF كبير جداً. الحد الأقصى هو 10 ميجابايت. حجم ملفك: ${(pdf.size / (1024*1024)).toFixed(2)} MB`);
                 return;
             }
 
-            const posts = [];
-            snapshot.forEach(child => {
-                const p = child.val();
-                p.key = child.key;
-                posts.push(p);
-            });
+            // Start Overlay
+            uploadOverlay.style.display = 'flex';
+            circlePath.setAttribute('stroke-dasharray', '0, 100');
+            overlayPercentage.textContent = '0%';
+            overlayStatusText.textContent = 'جاري التحضير...';
 
-            // Sort by timestamp (newest first)
-            posts.sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
+            try {
+                const postRef = db.ref(`posts/${server}`).push();
+                const postId = postRef.key;
 
-            posts.forEach(post => {
-                const el = document.createElement('div');
-                el.className = 'post-item';
+                let imageUrls = [];
+                let pdfUrl = null;
                 
-                let mediaHtml = '';
-                // Check 'images' list (Flutter structure)
-                if(post.images && post.images.length > 0) {
-                     mediaHtml += `<br><span style="color:#00CE9F"><i class="fas fa-images"></i> يحتوي على ${post.images.length} صور</span>`;
+                // 1. Upload Image
+                if (img) {
+                    overlayStatusText.textContent = 'جاري رفع الصورة...';
+                    const imgRef = storage.ref(`posts/${server}/images/${postId}/${img.name}`);
+                    const imgTask = imgRef.put(img);
+                    
+                    await new Promise((resolve, reject) => {
+                        imgTask.on('state_changed', 
+                            (snap) => {
+                                const p = (snap.bytesTransferred / snap.totalBytes) * 45; 
+                                circlePath.setAttribute('stroke-dasharray', `${Math.round(p)}, 100`);
+                                overlayPercentage.textContent = `${Math.round(p)}%`;
+                            },
+                            reject,
+                            async () => {
+                                imageUrls.push(await imgTask.snapshot.ref.getDownloadURL());
+                                resolve();
+                            }
+                        );
+                    });
                 }
-                if(post.pdf) mediaHtml += `<br><span style="color:#E74C3C"><i class="fas fa-file-pdf"></i> يحتوي على PDF</span>`;
 
-                // Display user email properly
-                let userDisplay = post.user ? post.user.split('@')[0] : 'Anonymous';
+                // 2. Upload PDF
+                if (pdf) {
+                    overlayStatusText.textContent = 'جاري رفع ملف PDF...';
+                    const pdfRef = storage.ref(`posts/${server}/pdfs/${postId}/${pdf.name}`);
+                    const pdfTask = pdfRef.put(pdf);
 
-                el.innerHTML = `
-                    <div class="post-header">
-                        <span><i class="fas fa-user"></i> ${userDisplay}</span>
-                        <span>${new Date(post.timestamp).toLocaleDateString('ar-EG')} ${new Date(post.timestamp).toLocaleTimeString('ar-EG')}</span>
-                    </div>
-                    <div class="post-content">${post.post || ''}</div>
-                    <div style="font-size:12px">${mediaHtml}</div>
-                    <div style="margin-top:10px; text-align:left;">
-                        <button class="delete-post-btn" onclick="deletePost('${server}', '${post.key}')">
-                            <i class="fas fa-trash"></i> حذف البوست
-                        </button>
-                    </div>
-                `;
-                listDiv.appendChild(el);
-            });
+                    await new Promise((resolve, reject) => {
+                        pdfTask.on('state_changed', 
+                            (snap) => {
+                                const p = 45 + ((snap.bytesTransferred / snap.totalBytes) * 45);
+                                circlePath.setAttribute('stroke-dasharray', `${Math.round(p)}, 100`);
+                                overlayPercentage.textContent = `${Math.round(p)}%`;
+                            },
+                            reject,
+                            async () => {
+                                pdfUrl = await pdfTask.snapshot.ref.getDownloadURL();
+                                resolve();
+                            }
+                        );
+                    });
+                }
+
+                // 3. Save to DB
+                overlayStatusText.textContent = 'جاري الحفظ...';
+                circlePath.setAttribute('stroke-dasharray', '95, 100');
+                
+                const postData = {
+                    user: currentUser.email || "Anonymous",
+                    post: content,
+                    images: imageUrls,
+                    pdf: pdfUrl,
+                    timestamp: new Date().toISOString(),
+                    likes: []
+                };
+
+                await postRef.set(postData);
+
+                circlePath.setAttribute('stroke-dasharray', '100, 100');
+                overlayPercentage.textContent = '100%';
+                
+                setTimeout(() => {
+                    alert('تم نشر البوست بنجاح!');
+                    // Reset
+                    document.getElementById('postContent').value = '';
+                    imageFile.value = '';
+                    pdfFile.value = '';
+                    document.getElementById('imageFileName').textContent = 'لم يتم اختيار ملف';
+                    document.getElementById('pdfFileName').textContent = 'لم يتم اختيار ملف';
+                    uploadOverlay.style.display = 'none';
+                    loadMyPosts();
+                }, 500);
+
+            } catch (error) {
+                console.error(error);
+                alert('حدث خطأ: ' + error.message);
+                uploadOverlay.style.display = 'none';
+            }
         });
-    }
 
-    window.deletePost = async function(server, key) {
-        if(!confirm('هل أنت متأكد من حذف هذا البوست؟')) return;
-        try {
-            // We should ideally delete images/pdfs from storage too, but removing from DB hides it from app
-            await db.ref(`posts/${server}/${key}`).remove();
-            alert('تم الحذف');
-            loadMyPosts();
-        } catch(e) {
-            alert('خطأ في الحذف: ' + e.message);
+        // --- Load Posts ---
+        function loadMyPosts() {
+            const server = serverSelect.value;
+            if(!server) return;
+
+            postsList.innerHTML = '<p style="text-align:center; color:var(--text-secondary);">جاري التحميل...</p>';
+            
+            db.ref(`posts/${server}`).limitToLast(50).once('value', snapshot => {
+                postsList.innerHTML = '';
+                
+                if (!snapshot.exists()) {
+                    postsList.innerHTML = '<p style="text-align:center; color:var(--text-secondary);">لا توجد بوستات منشورة في هذا السيرفر.</p>';
+                    return;
+                }
+
+                const posts = [];
+                snapshot.forEach(child => {
+                    const p = child.val();
+                    p.key = child.key;
+                    posts.push(p);
+                });
+
+                posts.sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
+
+                posts.forEach(post => {
+                    const el = document.createElement('div');
+                    el.className = 'post-item';
+                    
+                    let metaHtml = '';
+                    if(post.images && post.images.length > 0) {
+                          metaHtml += `<span class="badge badge-img"><i class="fas fa-images"></i> ${post.images.length} صور</span>`;
+                    }
+                    if(post.pdf) {
+                        metaHtml += `<span class="badge badge-pdf"><i class="fas fa-file-pdf"></i> ملف PDF</span>`;
+                    }
+
+                    let userDisplay = post.user ? post.user.split('@')[0] : 'Anonymous';
+                    const dateStr = new Date(post.timestamp).toLocaleDateString('ar-EG');
+                    const timeStr = new Date(post.timestamp).toLocaleTimeString('ar-EG', {hour: '2-digit', minute:'2-digit'});
+
+                    el.innerHTML = `
+                        <div class="post-header">
+                            <span><i class="fas fa-user-circle"></i> ${userDisplay}</span>
+                            <span>${dateStr} - ${timeStr}</span>
+                        </div>
+                        <div class="post-content">${post.post || '<span style="color:var(--text-secondary); font-style:italic;">بدون نص</span>'}</div>
+                        <div class="post-meta">${metaHtml}</div>
+                        <div style="display:flex; justify-content:flex-end;">
+                            <button class="btn-sm-danger" onclick="deletePost('${server}', '${post.key}')">
+                                <i class="fas fa-trash-alt"></i> حذف البوست
+                            </button>
+                        </div>
+                    `;
+                    postsList.appendChild(el);
+                });
+            });
         }
-    }
-</script>
+
+        window.deletePost = async function(server, key) {
+            if(!confirm('هل أنت متأكد من حذف هذا البوست؟ لا يمكن التراجع عن هذا الإجراء.')) return;
+            try {
+                await db.ref(`posts/${server}/${key}`).remove();
+                // Optionally remove files from storage here if needed, but rarely strictly required for basic functionality
+                alert('تم الحذف بنجاح');
+                loadMyPosts();
+            } catch(e) {
+                alert('خطأ في الحذف: ' + e.message);
+            }
+        }
+    </script>
 </body>
 </html>
