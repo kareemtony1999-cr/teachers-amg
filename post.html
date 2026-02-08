@@ -412,7 +412,7 @@
             if (!content && !img && !pdf) return alert('يجب كتابة نص أو رفع ملف على الأقل');
 
             // *** SIZE CHECK FOR PDF (10MB) ***
-            const MAX_PDF_SIZE = 10 * 1024 * 1024; // 10MB in Bytes
+            const MAX_PDF_SIZE = 50 * 1024 * 1024; // 10MB in Bytes
             if (pdf && pdf.size > MAX_PDF_SIZE) {
                 alert(`حجم ملف PDF كبير جداً. الحد الأقصى هو 10 ميجابايت. حجم ملفك: ${(pdf.size / (1024*1024)).toFixed(2)} MB`);
                 return;
@@ -434,7 +434,12 @@
                 // 1. Upload Image
                 if (img) {
                     overlayStatusText.textContent = 'جاري رفع الصورة...';
-                    const imgRef = storage.ref(`posts/${server}/images/${postId}/${img.name}`);
+                    
+                    // [🔥تعديل] تغيير اسم الصورة ليكون قصيراً جداً (img_timestamp)
+                    const imgExt = img.name.split('.').pop();
+                    const shortImgName = `img_${Date.now()}.${imgExt}`;
+                    
+                    const imgRef = storage.ref(`posts/${server}/images/${postId}/${shortImgName}`);
                     const imgTask = imgRef.put(img);
                     
                     await new Promise((resolve, reject) => {
@@ -456,7 +461,12 @@
                 // 2. Upload PDF
                 if (pdf) {
                     overlayStatusText.textContent = 'جاري رفع ملف PDF...';
-                    const pdfRef = storage.ref(`posts/${server}/pdfs/${postId}/${pdf.name}`);
+                    
+                    // [🔥تعديل] تغيير اسم الـ PDF ليكون قصيراً جداً (doc_timestamp)
+                    // هذا يحل مشكلة الاسم الطويل الذي يسبب كراش في التطبيق
+                    const shortPdfName = `doc_${Date.now()}.pdf`;
+                    
+                    const pdfRef = storage.ref(`posts/${server}/pdfs/${postId}/${shortPdfName}`);
                     const pdfTask = pdfRef.put(pdf);
 
                     await new Promise((resolve, reject) => {
