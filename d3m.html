@@ -1,0 +1,309 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>لوحة تحكم AMG - WhatsApp Style</title>
+    <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    
+    <style>
+        :root { --primary: #06467A; --bg: #dadbd3; --student-msg: #ffffff; --admin-msg: #dcf8c6; --delete: #e74c3c; }
+        * { box-sizing: border-box; font-family: 'Cairo', sans-serif; margin: 0; padding: 0; }
+        body { background-color: var(--bg); height: 100vh; display: flex; align-items: center; justify-content: center; overflow: hidden; }
+
+        /* الواجهة الرئيسية */
+        #admin-panel { 
+            display: none; 
+            width: 100%; 
+            height: 100vh; 
+            background: #fff; 
+            flex-direction: row-reverse; /* 🌟 جعل القائمة يسار والشات يمين 🌟 */
+        }
+        
+        /* القائمة الجانبية (يسار) */
+        .sidebar { 
+            width: 30%; 
+            min-width: 320px; 
+            border-right: 1px solid #ddd; /* تغيير مكان الحدود */
+            display: flex; 
+            flex-direction: column; 
+            background: #fff; 
+        }
+        .sidebar-header { padding: 15px; background: #f0f2f5; border-bottom: 1px solid #ddd; display: flex; justify-content: space-between; align-items: center; font-weight: bold; }
+        #server-selector-container { padding: 12px; background: var(--primary); color: #fff; }
+        select { width: 100%; padding: 10px; border-radius: 8px; border: none; font-weight: 600; cursor: pointer; }
+
+        .chat-list { flex: 1; overflow-y: auto; }
+        .chat-item { display: flex; align-items: center; padding: 15px; cursor: pointer; border-bottom: 1px solid #f8f9fa; }
+        .chat-item:hover { background: #f5f6f6; }
+        .avatar { width: 48px; height: 48px; background: var(--primary); color: #fff; border-radius: 50%; display: flex; align-items: center; justify-content: center; margin-left: 15px; font-weight: bold; }
+
+        /* منطقة المحادثة (يمين) */
+        .main-chat { flex: 1; display: flex; flex-direction: column; background: #e5ddd5; border-left: 1px solid #ddd; }
+        .chat-header { padding: 12px 20px; background: #f0f2f5; display: flex; align-items: center; border-bottom: 1px solid #ddd; }
+        
+        #messages-container { 
+            flex: 1; 
+            padding: 25px; 
+            overflow-y: auto; 
+            display: flex; 
+            flex-direction: column; 
+            background-image: url('https://user-images.githubusercontent.com/15075759/28719144-86dc0f70-73b1-11e7-911d-60d70fcded21.png'); 
+        }
+        
+        .message-wrapper { display: flex; align-items: center; margin-bottom: 10px; width: 100%; }
+        .message { max-width: 65%; padding: 10px 15px; border-radius: 12px; font-size: 15px; position: relative; box-shadow: 0 1px 2px rgba(0,0,0,0.1); }
+        .msg-student { align-self: flex-start; background: #ffffff; border-top-right-radius: 2px; text-align: right; }
+        .msg-admin { align-self: flex-end; background: #dcf8c6; border-top-left-radius: 2px; text-align: right; }
+        
+        .delete-btn-icon { color: var(--delete); cursor: pointer; margin: 0 12px; opacity: 0.1; transition: 0.2s; font-size: 15px; }
+        .message-wrapper:hover .delete-btn-icon { opacity: 1; }
+
+        .msg-time { font-size: 10px; color: #888; margin-top: 5px; text-align: left; }
+        .msg-img { max-width: 100%; border-radius: 8px; margin-top: 5px; cursor: pointer; }
+
+        .input-area { padding: 10px 15px; background: #f0f2f5; display: flex; align-items: center; gap: 10px; border-top: 1px solid #ddd; }
+        #message-input { flex: 1; padding: 12px 18px; border-radius: 25px; border: none; outline: none; }
+        .send-btn { background: var(--primary); color: #fff; border: none; width: 45px; height: 45px; border-radius: 50%; cursor: pointer; font-size: 20px; }
+        
+        /* زر العودة للموبايل (يظهر في المين شات) */
+        .back-btn { display: none; margin-left: 15px; font-size: 22px; cursor: pointer; color: var(--primary); }
+
+        @media (max-width: 768px) {
+            #admin-panel { flex-direction: row; }
+            .sidebar { width: 100%; position: absolute; z-index: 10; height: 100%; transition: 0.3s; right: 0; }
+            .sidebar.hidden { transform: translateX(-100%); } /* يختفي لليسار في الموبايل */
+            .back-btn { display: block; }
+        }
+    </style>
+</head>
+<body>
+
+    <!-- تم إزالة شاشة تسجيل الدخول بالكامل -->
+
+    <div id="admin-panel">
+        <div class="sidebar" id="sidebar">
+            <div id="server-selector-container">
+                <select id="server-select" onchange="filterChatsByServer()"></select>
+            </div>
+            <div class="sidebar-header">
+                <span>المحادثات</span>
+                <i class="fas fa-sign-out-alt" onclick="logout()" style="color:red; cursor:pointer" title="تسجيل خروج"></i>
+            </div>
+            <div class="chat-list" id="chat-list"></div>
+        </div>
+
+        <div class="main-chat">
+            <div class="chat-header" id="chat-header" style="display: none;">
+                <i class="fas fa-arrow-right back-btn" onclick="toggleSidebar(true)"></i>
+                <div class="avatar" id="active-avatar">?</div>
+                <div style="margin-right: 15px; flex: 1;">
+                    <div id="active-name" style="font-weight: bold;"></div>
+                    <div id="active-phone" style="font-size: 12px; color: #27ae60; font-weight: bold;"></div>
+                </div>
+                <i class="fas fa-trash-alt" style="color:var(--delete); cursor:pointer;" onclick="deleteFullChat()" title="مسح الشات بالكامل"></i>
+            </div>
+
+            <div id="messages-container">
+                <div style="display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100%; color: #777; text-align: center;">
+                    <i class="fab fa-whatsapp" style="font-size: 80px; color: #eee; margin-bottom: 20px;"></i>
+                    <h2>AMG Web Support</h2>
+                    <p>اختر طالباً من القائمة الجانبية لبدء المساعدة</p>
+                </div>
+            </div>
+
+            <div class="input-area" id="input-area" style="display: none;">
+                <input type="text" id="message-input" placeholder="اكتب ردك هنا...">
+                <button class="send-btn" onclick="sendReply()"><i class="fas fa-paper-plane"></i></button>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://www.gstatic.com/firebasejs/9.17.1/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.17.1/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.17.1/firebase-database-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.17.1/firebase-storage-compat.js"></script>
+
+    <script>
+        const firebaseConfig = {
+            apiKey: 'AIzaSyCdqYrVFspJ4rZwidfaPtc9PYpNlQQm09k',
+            appId: '1:284879336757:web:1f42836c2382d11b73087c',
+            messagingSenderId: '284879336757',
+            projectId: 'amgg-81ac3',
+            authDomain: 'amgg-81ac3.firebaseapp.com',
+            databaseURL: 'https://amgg-81ac3-default-rtdb.firebaseio.com',
+            storageBucket: 'amgg-81ac3.firebasestorage.app',
+        };
+
+        firebase.initializeApp(firebaseConfig);
+        const auth = firebase.auth();
+        const db = firebase.database();
+        const storage = firebase.storage();
+
+        let selectedServer = "";
+        let currentChatPath = "";
+        let currentStudentName = "";
+
+        // 🌟 التحقق من الجلسة عند تحميل الصفحة 🌟
+        auth.onAuthStateChanged(user => {
+            if (!user) {
+                // لو مفيش جلسة → يروح يسجل دخول
+                window.location.href = 'index.html';
+            } else {
+                // لو فيه جلسة → يفتح الصفحة
+                checkPermissions(user.uid);
+            }
+        });
+
+        async function checkPermissions(uid) {
+            const adminSnap = await db.ref(`admins/${uid}`).get();
+            if (adminSnap.exists()) {
+                loadServers();
+                document.getElementById('admin-panel').style.display = 'flex';
+            } else {
+                const teaSnap = await db.ref(`tea/${uid}`).get();
+                if (teaSnap.exists()) {
+                    initPanel(teaSnap.val().split('.'));
+                    document.getElementById('admin-panel').style.display = 'flex';
+                } else { 
+                    logout(); 
+                }
+            }
+        }
+
+        function logout() {
+            auth.signOut().then(() => {
+                window.location.href = 'index.html';
+            });
+        }
+
+        function loadServers() {
+            db.ref('support_chats').on('value', snap => initPanel(Object.keys(snap.val() || {})));
+        }
+
+        function initPanel(servers) {
+            const select = document.getElementById('server-select');
+            select.innerHTML = servers.map(s => `<option value="${s}">${s}</option>`).join('');
+            if (!selectedServer) { selectedServer = servers[0]; fetchChats(); }
+        }
+
+        function filterChatsByServer() {
+            selectedServer = document.getElementById('server-select').value;
+            fetchChats();
+        }
+
+        function fetchChats() {
+            db.ref(`support_chats/${selectedServer}`).on('value', snap => {
+                const listDiv = document.getElementById('chat-list');
+                listDiv.innerHTML = '';
+                const students = snap.val();
+                if (students) {
+                    for (let name in students) {
+                        const item = document.createElement('div');
+                        item.className = 'chat-item';
+                        item.onclick = () => openChat(selectedServer, name);
+                        item.innerHTML = `<div class="avatar">${name[0]}</div><div><b>${name}</b><div style="font-size:11px;color:#888">${selectedServer}</div></div>`;
+                        listDiv.appendChild(item);
+                    }
+                }
+            });
+        }
+
+        function openChat(server, student) {
+            currentChatPath = `support_chats/${server}/${student}`;
+            currentStudentName = student;
+            document.getElementById('chat-header').style.display = 'flex';
+            document.getElementById('input-area').style.display = 'flex';
+            document.getElementById('active-name').innerText = student;
+            document.getElementById('active-avatar').innerText = student[0];
+            
+            db.ref('users').orderByChild('fullName').equalTo(student).once('value', snap => {
+                if (snap.exists()) {
+                    const u = Object.values(snap.val())[0];
+                    document.getElementById('active-phone').innerText = u.phoneNumber || "";
+                }
+            });
+
+            toggleSidebar(false);
+
+            db.ref(currentChatPath).orderByChild('timestamp').on('value', snap => {
+                const container = document.getElementById('messages-container');
+                container.innerHTML = '';
+                const msgs = snap.val();
+                if (msgs) {
+                    Object.keys(msgs).forEach(key => {
+                        const m = msgs[key];
+                        const wrapper = document.createElement('div');
+                        wrapper.className = "message-wrapper";
+                        wrapper.style.flexDirection = m.isFromAdmin ? "row-reverse" : "row";
+
+                        const msgDiv = document.createElement('div');
+                        msgDiv.className = `message ${m.isFromAdmin ? 'msg-admin' : 'msg-student'}`;
+                        let content = m.text ? `<div>${m.text}</div>` : '';
+                        if (m.imageUrl) content += `<img src="${m.imageUrl}" class="msg-img" onclick="window.open('${m.imageUrl}')">`;
+                        msgDiv.innerHTML = `${content}<div class="msg-time">${new Date(m.timestamp).toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'})}</div>`;
+
+                        const delBtn = document.createElement('i');
+                        delBtn.className = "fas fa-trash-alt delete-btn-icon";
+                        delBtn.onclick = (e) => { e.stopPropagation(); deleteMessage(key); };
+
+                        wrapper.appendChild(msgDiv);
+                        wrapper.appendChild(delBtn);
+                        container.appendChild(wrapper);
+                    });
+                    container.scrollTop = container.scrollHeight;
+                }
+            });
+        }
+
+        async function deleteMessage(msgId) {
+            if (confirm("حذف الرسالة نهائياً؟")) {
+                const snap = await db.ref(`${currentChatPath}/${msgId}`).get();
+                if (snap.exists() && snap.val().imageStoragePath) {
+                    try { await storage.ref(snap.val().imageStoragePath).delete(); } catch(e) {}
+                }
+                db.ref(`${currentChatPath}/${msgId}`).remove();
+            }
+        }
+
+        async function deleteFullChat() {
+            if (confirm(`مسح المحادثة مع ${currentStudentName} وجميع صورها؟`)) {
+                const snap = await db.ref(currentChatPath).get();
+                if (snap.exists()) {
+                    const msgs = snap.val();
+                    for (let key in msgs) {
+                        if (msgs[key].imageStoragePath) {
+                            try { await storage.ref(msgs[key].imageStoragePath).delete(); } catch(e) {}
+                        }
+                    }
+                }
+                db.ref(currentChatPath).remove();
+                document.getElementById('messages-container').innerHTML = '';
+                document.getElementById('chat-header').style.display = 'none';
+                document.getElementById('input-area').style.display = 'none';
+            }
+        }
+
+        function sendReply() {
+            const input = document.getElementById('message-input');
+            if (!input.value.trim() || !currentChatPath) return;
+            db.ref(currentChatPath).push().set({
+                senderId: "ADMIN",
+                text: input.value.trim(),
+                timestamp: Date.now(),
+                isFromAdmin: true
+            });
+            input.value = '';
+        }
+
+        document.getElementById('message-input').addEventListener('keypress', e => { if(e.key==='Enter') sendReply(); });
+
+        function toggleSidebar(show) {
+            const sb = document.getElementById('sidebar');
+            if (show) sb.classList.remove('hidden');
+            else sb.classList.add('hidden');
+        }
+    </script>
+</body>
+</html>

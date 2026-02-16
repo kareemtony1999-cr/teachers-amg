@@ -51,11 +51,10 @@
         #report-content { 
             background: white; padding: 15px; border-radius: 10px; 
             box-shadow: 0 2px 5px rgba(0,0,0,0.1); min-height: 400px; margin-top: 20px;
-            /* [هام للموبايل] السماح بالتمرير الأفقي للجدول */
             overflow-x: auto; 
         }
         
-        table { width: 100%; border-collapse: collapse; margin-top: 5px; min-width: 800px; /* زيادة العرض لاستيعاب العمود الجديد */ }
+        table { width: 100%; border-collapse: collapse; margin-top: 5px; min-width: 800px; }
         th, td { padding: 12px 10px; text-align: right; border-bottom: 1px solid #eee; font-size: 14px; vertical-align: middle; }
         th { background-color: #f8f9fa; color: var(--primary-color); font-weight: bold; white-space: nowrap; }
         tr:hover { background-color: #f1f1f1; }
@@ -79,7 +78,7 @@
 
         /* --- تحسينات الموبايل (Media Queries) --- */
         @media (max-width: 768px) {
-            .navbar { justify-content: flex-start; overflow-x: auto; padding-bottom: 10px; } /* شريط تمرير للأزرار */
+            .navbar { justify-content: flex-start; overflow-x: auto; padding-bottom: 10px; }
             .teacher-select-container { border-left: none; margin-left: 0; padding-left: 0; width: 100%; margin-top: 10px; border-top: 1px solid #eee; padding-top: 10px; }
             #globalTeacherSelect { width: 100%; }
             
@@ -99,8 +98,10 @@
         <div class="navbar">
             <a href="activation_stats.html" class="nav-btn active"><i class="fas fa-users"></i> الطلاب</a>
             
-            <a href="view.html" class="nav-btn"><i class="fas fa-eye"></i> المشاهدات</a>
+            <!-- زر دعم الطلاب الجديد -->
+            <a href="d3m.html" class="nav-btn"><i class="fas fa-headset"></i> دعم الطلاب</a>
             
+            <a href="view.html" class="nav-btn"><i class="fas fa-eye"></i> المشاهدات</a>
             <a href="exam_degrees.html" class="nav-btn"><i class="fas fa-poll"></i> الامتحانات</a>
             <a href="create_exam.html" class="nav-btn"><i class="fas fa-file-signature"></i> إنشاء امتحان</a>
             <a href="Move_lec.html" class="nav-btn"><i class="fas fa-exchange-alt"></i> نقل</a>
@@ -242,7 +243,6 @@
         async function initPage() {
             document.getElementById('tableBody').innerHTML = '<tr><td colspan="6" class="status-msg">جاري تحميل البيانات...</td></tr>';
             try {
-                // تمت إضافة جلب الأكواد
                 const [usersSnap, monthsSnap, accessSnap, codesSnap] = await Promise.all([
                     db.ref('users').once('value'),
                     db.ref('months').once('value'), 
@@ -255,7 +255,6 @@
                 const accessObj = accessSnap.val() || {};
                 const codesObj = codesSnap.val() || {};
 
-                // 1. خريطة لربط كود الشهر (ID) باسم الشهر والمدرس الخاص به
                 let monthDetailsMap = {};
                 for (const [tName, tMonths] of Object.entries(monthsObj)) {
                     for (const [mId, mData] of Object.entries(tMonths)) {
@@ -266,7 +265,6 @@
                     }
                 }
 
-                // 2. خريطة لربط الطالب بالكود
                 let userCodeMap = {};
                 for (const [codeKey, codeData] of Object.entries(codesObj)) {
                     if (codeData.usedBy) {
@@ -277,27 +275,22 @@
                 allRowsData = [];
 
                 for (const [uid, userData] of Object.entries(usersObj)) {
-                    // الفلترة: عرض الطالب فقط إذا كان يتبع المدرس المحدد
                     if (userData.year !== activeTeacher) {
                         continue; 
                     }
 
                     let displayDate = null;
-                    let activeMonthsList = []; // قائمة لتخزين أسماء الشهور المتاحة
+                    let activeMonthsList = [];
                     const userAccess = accessObj[uid];
 
                     if (userAccess) {
                         let latestActivation = 0;
                         for (const [monthId, expiryDate] of Object.entries(userAccess)) {
-                            // البحث عن تفاصيل الشهر
                             const monthInfo = monthDetailsMap[monthId];
                             
-                            // التأكد أن الشهر يتبع المدرس الحالي
                             if (monthInfo && monthInfo.teacher === activeTeacher) {
-                                // إضافة اسم الشهر للقائمة
                                 activeMonthsList.push(monthInfo.name);
 
-                                // حساب آخر تاريخ تفعيل
                                 const activationDate = expiryDate - THIRTY_DAYS_MS;
                                 if (activationDate > latestActivation) {
                                     latestActivation = activationDate;
@@ -307,20 +300,18 @@
                         if (latestActivation > 0) displayDate = latestActivation;
                     }
 
-                    // جلب الكود
                     const studentCode = userCodeMap[uid] || '---';
 
                     allRowsData.push({
                         uid: uid,
                         fullName: userData.fullName || 'بدون اسم',
                         phone: userData.phoneNumber || '---',
-                        code: studentCode, // إضافة الكود للبيانات
+                        code: studentCode,
                         calculatedJoinDate: displayDate,
                         activeMonths: activeMonthsList
                     });
                 }
 
-                // الترتيب: المفعلين أولاً
                 allRowsData.sort((a, b) => (b.calculatedJoinDate || 0) - (a.calculatedJoinDate || 0));
 
                 filterAndRender();
@@ -341,17 +332,13 @@
             let html = '';
 
             allRowsData.forEach(row => {
-                // تحويل قائمة الشهور لنص واحد لأغراض البحث
                 const monthsString = row.activeMonths.join(' ');
-                
-                // البحث يشمل الاسم، الكود، رقم الهاتف، والشهور
                 const searchString = `${row.fullName} ${row.code} ${row.phone} ${monthsString}`.toLowerCase();
                 
                 if (searchTerm && !searchString.includes(searchTerm)) return;
 
                 count++;
                 
-                // إنشاء HTML للشهور
                 let monthsHtml = '';
                 if (row.activeMonths.length > 0) {
                     monthsHtml = row.activeMonths.map(m => `<span class="month-badge">${m}</span>`).join('');
@@ -359,7 +346,6 @@
                     monthsHtml = '<span class="no-date">--</span>';
                 }
 
-                // تنسيق التاريخ
                 let dateBadge = '<span class="no-date">غير مفعل</span>';
                 if (row.calculatedJoinDate) {
                     const dateObj = new Date(row.calculatedJoinDate);
