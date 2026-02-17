@@ -2,7 +2,7 @@
 <html lang="ar" dir="rtl">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>لوحة تحكم AMG - WhatsApp Style</title>
     <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
@@ -18,35 +18,50 @@
             width: 100%; 
             height: 100vh; 
             background: #fff; 
-            flex-direction: row-reverse; /* 🌟 جعل القائمة يسار والشات يمين 🌟 */
+            flex-direction: row-reverse; 
+            position: relative;
         }
         
-        /* القائمة الجانبية (يسار) */
+        /* القائمة الجانبية (يسار في الشاشات الكبيرة) */
         .sidebar { 
             width: 30%; 
             min-width: 320px; 
-            border-right: 1px solid #ddd; /* تغيير مكان الحدود */
+            border-right: 1px solid #ddd; 
             display: flex; 
             flex-direction: column; 
             background: #fff; 
+            height: 100%;
         }
-        .sidebar-header { padding: 15px; background: #f0f2f5; border-bottom: 1px solid #ddd; display: flex; justify-content: space-between; align-items: center; font-weight: bold; }
+        .sidebar-header { 
+            padding: 15px; 
+            background: #f0f2f5; 
+            border-bottom: 1px solid #ddd; 
+            display: flex; 
+            justify-content: space-between; 
+            align-items: center; 
+            font-weight: bold; 
+        }
         #server-selector-container { padding: 12px; background: var(--primary); color: #fff; }
-        select { width: 100%; padding: 10px; border-radius: 8px; border: none; font-weight: 600; cursor: pointer; }
+        select { width: 100%; padding: 10px; border-radius: 8px; border: none; font-weight: 600; cursor: pointer; outline: none;}
 
-        .chat-list { flex: 1; overflow-y: auto; }
+        .chat-list { 
+            flex: 1; 
+            overflow-y: auto; 
+            -webkit-overflow-scrolling: touch; /* تمرير ناعم على الهواتف */
+        }
         .chat-item { display: flex; align-items: center; padding: 15px; cursor: pointer; border-bottom: 1px solid #f8f9fa; }
         .chat-item:hover { background: #f5f6f6; }
-        .avatar { width: 48px; height: 48px; background: var(--primary); color: #fff; border-radius: 50%; display: flex; align-items: center; justify-content: center; margin-left: 15px; font-weight: bold; }
+        .avatar { width: 48px; height: 48px; background: var(--primary); color: #fff; border-radius: 50%; display: flex; align-items: center; justify-content: center; margin-left: 15px; font-weight: bold; flex-shrink: 0;}
 
-        /* منطقة المحادثة (يمين) */
-        .main-chat { flex: 1; display: flex; flex-direction: column; background: #e5ddd5; border-left: 1px solid #ddd; }
+        /* منطقة المحادثة */
+        .main-chat { flex: 1; display: flex; flex-direction: column; background: #e5ddd5; border-left: 1px solid #ddd; height: 100%; }
         .chat-header { padding: 12px 20px; background: #f0f2f5; display: flex; align-items: center; border-bottom: 1px solid #ddd; }
         
         #messages-container { 
             flex: 1; 
             padding: 25px; 
             overflow-y: auto; 
+            -webkit-overflow-scrolling: touch; /* تمرير ناعم على الهواتف */
             display: flex; 
             flex-direction: column; 
             background-image: url('https://user-images.githubusercontent.com/15075759/28719144-86dc0f70-73b1-11e7-911d-60d70fcded21.png'); 
@@ -60,56 +75,75 @@
         .delete-btn-icon { color: var(--delete); cursor: pointer; margin: 0 12px; opacity: 0.1; transition: 0.2s; font-size: 15px; }
         .message-wrapper:hover .delete-btn-icon { opacity: 1; }
 
-        .msg-time { font-size: 10px; color: #888; margin-top: 5px; text-align: left; }
+        .msg-time { font-size: 10px; color: #888; margin-top: 5px; text-align: left; direction: ltr; display: inline-block; float: left; }
         .msg-img { max-width: 100%; border-radius: 8px; margin-top: 5px; cursor: pointer; }
 
         .input-area { padding: 10px 15px; background: #f0f2f5; display: flex; align-items: center; gap: 10px; border-top: 1px solid #ddd; }
         #message-input { flex: 1; padding: 12px 18px; border-radius: 25px; border: none; outline: none; }
-        .send-btn { background: var(--primary); color: #fff; border: none; width: 45px; height: 45px; border-radius: 50%; cursor: pointer; font-size: 20px; }
+        .send-btn { background: var(--primary); color: #fff; border: none; width: 45px; height: 45px; border-radius: 50%; cursor: pointer; font-size: 20px; flex-shrink: 0;}
         
-        /* زر العودة للموبايل (يظهر في المين شات) */
-        .back-btn { display: none; margin-left: 15px; font-size: 22px; cursor: pointer; color: var(--primary); }
+        /* زر العودة للموبايل */
+        .back-btn { display: none; margin-left: 15px; font-size: 20px; cursor: pointer; color: #54656f; padding: 5px; }
 
+        /* تعديلات الهاتف (ستايل واتساب) */
         @media (max-width: 768px) {
-            #admin-panel { flex-direction: row; }
-            .sidebar { width: 100%; position: absolute; z-index: 10; height: 100%; transition: 0.3s; right: 0; }
-            .sidebar.hidden { transform: translateX(-100%); } /* يختفي لليسار في الموبايل */
-            .back-btn { display: block; }
+            #admin-panel { display: block; }
+            
+            /* القائمة الجانبية في الموبايل تأخذ الشاشة بالكامل وتكون فوق الشات */
+            .sidebar { 
+                width: 100%; 
+                position: absolute; 
+                z-index: 10; 
+                top: 0;
+                right: 0;
+                transition: transform 0.3s ease-in-out; 
+            }
+            
+            /* عند الدخول لشات، القائمة الجانبية تنزلق لليمين لتختفي */
+            .sidebar.hidden { transform: translateX(100%); } 
+
+            /* الشات في الموبايل يأخذ الشاشة بالكامل ويكون في الخلفية */
+            .main-chat { width: 100%; position: absolute; top: 0; right: 0; z-index: 5; }
+            
+            .back-btn { display: block; } /* إظهار زر الرجوع في الموبايل */
+            
+            #messages-container { padding: 15px; }
+            .message { max-width: 85%; }
+            .delete-btn-icon { opacity: 1; font-size: 18px; } /* جعل زر الحذف أوضح في الموبايل */
         }
     </style>
 </head>
 <body>
 
-    <!-- تم إزالة شاشة تسجيل الدخول بالكامل -->
-
     <div id="admin-panel">
+        
         <div class="sidebar" id="sidebar">
             <div id="server-selector-container">
                 <select id="server-select" onchange="filterChatsByServer()"></select>
             </div>
             <div class="sidebar-header">
                 <span>المحادثات</span>
-                <i class="fas fa-sign-out-alt" onclick="logout()" style="color:red; cursor:pointer" title="تسجيل خروج"></i>
-            </div>
+                </div>
             <div class="chat-list" id="chat-list"></div>
         </div>
 
         <div class="main-chat">
             <div class="chat-header" id="chat-header" style="display: none;">
-                <i class="fas fa-arrow-right back-btn" onclick="toggleSidebar(true)"></i>
+                <i class="fas fa-arrow-right back-btn" onclick="toggleSidebar(true)" title="رجوع للقائمة"></i>
+                
                 <div class="avatar" id="active-avatar">?</div>
                 <div style="margin-right: 15px; flex: 1;">
-                    <div id="active-name" style="font-weight: bold;"></div>
+                    <div id="active-name" style="font-weight: bold; color: #111;"></div>
                     <div id="active-phone" style="font-size: 12px; color: #27ae60; font-weight: bold;"></div>
                 </div>
-                <i class="fas fa-trash-alt" style="color:var(--delete); cursor:pointer;" onclick="deleteFullChat()" title="مسح الشات بالكامل"></i>
+                <i class="fas fa-trash-alt" style="color:var(--delete); cursor:pointer; font-size: 18px; padding: 5px;" onclick="deleteFullChat()" title="مسح الشات بالكامل"></i>
             </div>
 
             <div id="messages-container">
                 <div style="display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100%; color: #777; text-align: center;">
-                    <i class="fab fa-whatsapp" style="font-size: 80px; color: #eee; margin-bottom: 20px;"></i>
+                    <i class="fab fa-whatsapp" style="font-size: 80px; color: #ccc; margin-bottom: 20px;"></i>
                     <h2>AMG Web Support</h2>
-                    <p>اختر طالباً من القائمة الجانبية لبدء المساعدة</p>
+                    <p>اختر طالباً من القائمة للبدء</p>
                 </div>
             </div>
 
@@ -145,13 +179,10 @@
         let currentChatPath = "";
         let currentStudentName = "";
 
-        // 🌟 التحقق من الجلسة عند تحميل الصفحة 🌟
         auth.onAuthStateChanged(user => {
             if (!user) {
-                // لو مفيش جلسة → يروح يسجل دخول
                 window.location.href = 'index.html';
             } else {
-                // لو فيه جلسة → يفتح الصفحة
                 checkPermissions(user.uid);
             }
         });
@@ -167,15 +198,9 @@
                     initPanel(teaSnap.val().split('.'));
                     document.getElementById('admin-panel').style.display = 'flex';
                 } else { 
-                    logout(); 
+                    auth.signOut().then(() => window.location.href = 'index.html');
                 }
             }
-        }
-
-        function logout() {
-            auth.signOut().then(() => {
-                window.location.href = 'index.html';
-            });
         }
 
         function loadServers() {
@@ -203,11 +228,23 @@
                         const item = document.createElement('div');
                         item.className = 'chat-item';
                         item.onclick = () => openChat(selectedServer, name);
-                        item.innerHTML = `<div class="avatar">${name[0]}</div><div><b>${name}</b><div style="font-size:11px;color:#888">${selectedServer}</div></div>`;
+                        item.innerHTML = `<div class="avatar">${name[0]}</div><div><b style="color:#111">${name}</b><div style="font-size:12px;color:#667781">${selectedServer}</div></div>`;
                         listDiv.appendChild(item);
                     }
                 }
             });
+        }
+
+        // دالة تحويل الوقت لنظام 12 ساعة مع (ص / م)
+        function formatTime12Hour(timestamp) {
+            const date = new Date(timestamp);
+            let hours = date.getHours();
+            let minutes = date.getMinutes();
+            const ampm = hours >= 12 ? 'م' : 'ص';
+            hours = hours % 12;
+            hours = hours ? hours : 12; // الساعة 0 تصبح 12
+            minutes = minutes < 10 ? '0' + minutes : minutes;
+            return hours + ':' + minutes + ' ' + ampm;
         }
 
         function openChat(server, student) {
@@ -225,6 +262,7 @@
                 }
             });
 
+            // إخفاء القائمة الجانبية في الهاتف لدخول الشات
             toggleSidebar(false);
 
             db.ref(currentChatPath).orderByChild('timestamp').on('value', snap => {
@@ -240,9 +278,12 @@
 
                         const msgDiv = document.createElement('div');
                         msgDiv.className = `message ${m.isFromAdmin ? 'msg-admin' : 'msg-student'}`;
-                        let content = m.text ? `<div>${m.text}</div>` : '';
+                        let content = m.text ? `<div style="margin-bottom: 2px;">${m.text}</div>` : '';
                         if (m.imageUrl) content += `<img src="${m.imageUrl}" class="msg-img" onclick="window.open('${m.imageUrl}')">`;
-                        msgDiv.innerHTML = `${content}<div class="msg-time">${new Date(m.timestamp).toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'})}</div>`;
+                        
+                        // استخدام دالة الوقت الجديدة (ص / م)
+                        const formattedTime = formatTime12Hour(m.timestamp);
+                        msgDiv.innerHTML = `${content}<div class="msg-time">${formattedTime}</div><div style="clear:both;"></div>`;
 
                         const delBtn = document.createElement('i');
                         delBtn.className = "fas fa-trash-alt delete-btn-icon";
@@ -252,6 +293,7 @@
                         wrapper.appendChild(delBtn);
                         container.appendChild(wrapper);
                     });
+                    // النزول لأسفل الشات تلقائياً
                     container.scrollTop = container.scrollHeight;
                 }
             });
@@ -282,6 +324,9 @@
                 document.getElementById('messages-container').innerHTML = '';
                 document.getElementById('chat-header').style.display = 'none';
                 document.getElementById('input-area').style.display = 'none';
+                
+                // العودة للقائمة الجانبية بعد مسح الشات (للهاتف)
+                toggleSidebar(true);
             }
         }
 
@@ -295,14 +340,20 @@
                 isFromAdmin: true
             });
             input.value = '';
+            // التركيز مجدداً على حقل الإدخال بعد الإرسال
+            input.focus();
         }
 
         document.getElementById('message-input').addEventListener('keypress', e => { if(e.key==='Enter') sendReply(); });
 
+        // دالة التحكم في إظهار وإخفاء القائمة الجانبية (للهاتف)
         function toggleSidebar(show) {
             const sb = document.getElementById('sidebar');
-            if (show) sb.classList.remove('hidden');
-            else sb.classList.add('hidden');
+            if (show) {
+                sb.classList.remove('hidden'); // يظهر القائمة
+            } else {
+                sb.classList.add('hidden'); // يخفي القائمة ويعرض الشات
+            }
         }
     </script>
 </body>
