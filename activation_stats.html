@@ -282,7 +282,11 @@
                 let userCodeMap = {};
                 for (const [codeKey, codeData] of Object.entries(codesObj)) {
                     if (codeData.usedBy) {
-                        userCodeMap[codeData.usedBy] = codeKey;
+                        // تجميع الأكواد بدلاً من استبدالها
+                        if (!userCodeMap[codeData.usedBy]) {
+                            userCodeMap[codeData.usedBy] = [];
+                        }
+                        userCodeMap[codeData.usedBy].push(codeKey);
                     }
                 }
 
@@ -314,17 +318,17 @@
                         if (latestActivation > 0) displayDate = latestActivation;
                     }
 
-                    const studentCode = userCodeMap[uid] || '---';
+                    const studentCodes = userCodeMap[uid] || [];
 
                     allRowsData.push({
                         uid: uid,
                         fullName: userData.fullName || 'بدون اسم',
                         phone: userData.phoneNumber || '---',
-                        code: studentCode,
+                        code: studentCodes, // تمرير مصفوفة الأكواد بالكامل
                         calculatedJoinDate: displayDate,
                         activeMonths: activeMonthsList,
-                        email: userData.email || 'غير متوفر', // إضافة الإيميل
-                        password: userData.password || 'غير متوفر' // إضافة الباسورد
+                        email: userData.email || 'غير متوفر',
+                        password: userData.password || 'غير متوفر'
                     });
                 }
 
@@ -348,8 +352,10 @@
             let html = '';
 
             allRowsData.forEach(row => {
+                // تجميع الأكواد كنص ليتم البحث داخلها
+                const codesSearchStr = Array.isArray(row.code) ? row.code.join(' ') : row.code;
                 const monthsString = row.activeMonths.join(' ');
-                const searchString = `${row.fullName} ${row.code} ${row.phone} ${monthsString}`.toLowerCase();
+                const searchString = `${row.fullName} ${codesSearchStr} ${row.phone} ${monthsString}`.toLowerCase();
                 
                 if (searchTerm && !searchString.includes(searchTerm)) return;
 
@@ -369,12 +375,20 @@
                     dateBadge = `<span class="date-badge">${dateStr}</span>`;
                 }
 
+                // عرض الأكواد فوق بعض
+                let codesHtml = '---';
+                if (Array.isArray(row.code) && row.code.length > 0) {
+                    codesHtml = row.code.join('<br>');
+                } else if (typeof row.code === 'string') {
+                    codesHtml = row.code;
+                }
+
                 // صف الطالب الرئيسي + صف التفاصيل المخفي
                 html += `
                     <tr>
                         <td>${count}</td>
                         <td style="font-weight:bold;">${row.fullName}</td>
-                        <td style="font-family:monospace; font-weight:bold;">${row.code}</td> 
+                        <td style="font-family:monospace; font-weight:bold; line-height: 1.5;">${codesHtml}</td> 
                         <td>${monthsHtml}</td> 
                         <td style="direction:ltr; text-align:right;">${row.phone}</td>
                         <td>${dateBadge}</td>
