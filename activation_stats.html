@@ -282,7 +282,6 @@
                 let userCodeMap = {};
                 for (const [codeKey, codeData] of Object.entries(codesObj)) {
                     if (codeData.usedBy) {
-                        // تجميع الأكواد بدلاً من استبدالها
                         if (!userCodeMap[codeData.usedBy]) {
                             userCodeMap[codeData.usedBy] = [];
                         }
@@ -291,6 +290,7 @@
                 }
 
                 allRowsData = [];
+                const now = Date.now();
 
                 for (const [uid, userData] of Object.entries(usersObj)) {
                     if (userData.year !== activeTeacher) {
@@ -307,7 +307,11 @@
                             const monthInfo = monthDetailsMap[monthId];
                             
                             if (monthInfo && monthInfo.teacher === activeTeacher) {
-                                activeMonthsList.push(monthInfo.name);
+                                // حساب الأيام المتبقية للشهر المعني
+                                let remainingDays = Math.ceil((expiryDate - now) / (1000 * 60 * 60 * 24));
+                                if (remainingDays < 0) remainingDays = 0; // إذا انتهى الشهر
+                                
+                                activeMonthsList.push(`${monthInfo.name} (${remainingDays} يوم)`);
 
                                 const activationDate = expiryDate - THIRTY_DAYS_MS;
                                 if (activationDate > latestActivation) {
@@ -324,7 +328,7 @@
                         uid: uid,
                         fullName: userData.fullName || 'بدون اسم',
                         phone: userData.phoneNumber || '---',
-                        code: studentCodes, // تمرير مصفوفة الأكواد بالكامل
+                        code: studentCodes, 
                         calculatedJoinDate: displayDate,
                         activeMonths: activeMonthsList,
                         email: userData.email || 'غير متوفر',
@@ -352,7 +356,6 @@
             let html = '';
 
             allRowsData.forEach(row => {
-                // تجميع الأكواد كنص ليتم البحث داخلها
                 const codesSearchStr = Array.isArray(row.code) ? row.code.join(' ') : row.code;
                 const monthsString = row.activeMonths.join(' ');
                 const searchString = `${row.fullName} ${codesSearchStr} ${row.phone} ${monthsString}`.toLowerCase();
@@ -375,7 +378,6 @@
                     dateBadge = `<span class="date-badge">${dateStr}</span>`;
                 }
 
-                // عرض الأكواد فوق بعض
                 let codesHtml = '---';
                 if (Array.isArray(row.code) && row.code.length > 0) {
                     codesHtml = row.code.join('<br>');
@@ -383,7 +385,6 @@
                     codesHtml = row.code;
                 }
 
-                // صف الطالب الرئيسي + صف التفاصيل المخفي
                 html += `
                     <tr>
                         <td>${count}</td>
@@ -422,7 +423,6 @@
             }
         }
 
-        // دالة لفتح وإغلاق التفاصيل (الإيميل والباسورد)
         window.toggleDetails = function(uid, btnElement) {
             const detailsRow = document.getElementById('details-' + uid);
             if (detailsRow.style.display === 'table-row') {
@@ -434,13 +434,11 @@
             }
         };
 
-        // دالة نسخ النص مع إشعار التغيير
         window.copyData = function(element, text) {
             if (text === 'غير متوفر') return;
             
             const originalHTML = element.innerHTML;
 
-            // النسخ للحافظة
             if (navigator.clipboard && window.isSecureContext) {
                 navigator.clipboard.writeText(text);
             } else {
@@ -454,7 +452,6 @@
                 textArea.remove();
             }
 
-            // إشعار مرئي
             element.innerHTML = 'تم النسخ <i class="fas fa-check" style="color:#27ae60;"></i>';
             element.style.backgroundColor = '#d4edda';
             element.style.color = '#155724';
