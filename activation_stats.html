@@ -89,6 +89,53 @@
         }
         .copy-badge:hover { background: #cbd5e1; transform: translateY(-2px); box-shadow: 0 2px 5px rgba(0,0,0,0.1); }
 
+        /* --- زرار التفعيل والتعطيل (Toggle Switch) --- */
+        .switch {
+            position: relative;
+            display: inline-block;
+            width: 44px;
+            height: 24px;
+            direction: ltr; /* لجعل الزرار يتحرك بشكل صحيح يمين/يسار */
+        }
+        .switch input { 
+            opacity: 0;
+            width: 0;
+            height: 0;
+        }
+        .slider {
+            position: absolute;
+            cursor: pointer;
+            top: 0; left: 0; right: 0; bottom: 0;
+            background-color: #E74C3C; /* لون أحمر للتعطيل */
+            transition: .4s;
+            border-radius: 24px;
+        }
+        .slider:before {
+            position: absolute;
+            content: "";
+            height: 18px;
+            width: 18px;
+            left: 3px;
+            bottom: 3px;
+            background-color: white;
+            transition: .4s;
+            border-radius: 50%;
+        }
+        input:checked + .slider {
+            background-color: #27AE60; /* لون أخضر للتفعيل */
+        }
+        input:checked + .slider:before {
+            transform: translateX(20px);
+        }
+        .status-text {
+            font-size: 12px;
+            font-weight: bold;
+            display: block;
+            margin-top: 5px;
+        }
+        .text-active { color: #27AE60; }
+        .text-disabled { color: #E74C3C; }
+
         /* --- تحسينات الموبايل (Media Queries) --- */
         @media (max-width: 768px) {
             .navbar { justify-content: flex-start; overflow-x: auto; padding-bottom: 10px; }
@@ -148,15 +195,17 @@
                     <thead>
                         <tr>
                             <th width="5%">#</th>
-                            <th width="20%">اسم الطالب</th>
+                            <th width="18%">اسم الطالب</th>
                             <th width="10%">الكود</th> 
-                            <th width="25%">الشهور المتاحة</th> 
-                            <th width="15%">رقم الهاتف</th>
+                            <th width="20%">الشهور المتاحة</th> 
+                            <th width="12%">رقم الهاتف</th>
                             <th width="15%">تاريخ آخر تفعيل</th>
-                            <th width="10%">تفاصيل</th> </tr>
+                            <th width="12%">الحالة</th> 
+                            <th width="8%">تفاصيل</th> 
+                        </tr>
                     </thead>
                     <tbody id="tableBody">
-                        <tr><td colspan="7" class="status-msg">جاري تحميل البيانات...</td></tr>
+                        <tr><td colspan="8" class="status-msg">جاري تحميل البيانات...</td></tr>
                     </tbody>
                 </table>
             </div>
@@ -255,7 +304,7 @@
         }
 
         async function initPage() {
-            document.getElementById('tableBody').innerHTML = '<tr><td colspan="7" class="status-msg">جاري تحميل البيانات...</td></tr>';
+            document.getElementById('tableBody').innerHTML = '<tr><td colspan="8" class="status-msg">جاري تحميل البيانات...</td></tr>';
             try {
                 const [usersSnap, monthsSnap, accessSnap, codesSnap] = await Promise.all([
                     db.ref('users').once('value'),
@@ -332,7 +381,8 @@
                         calculatedJoinDate: displayDate,
                         activeMonths: activeMonthsList,
                         email: userData.email || 'غير متوفر',
-                        password: userData.password || 'غير متوفر'
+                        password: userData.password || 'غير متوفر',
+                        isDisabled: userData.isDisabled || false // إضافة حالة التفعيل
                     });
                 }
 
@@ -342,7 +392,7 @@
 
             } catch (error) {
                 console.error("Error:", error);
-                document.getElementById('tableBody').innerHTML = `<tr><td colspan="7" class="status-msg" style="color:red">خطأ: ${error.message}</td></tr>`;
+                document.getElementById('tableBody').innerHTML = `<tr><td colspan="8" class="status-msg" style="color:red">خطأ: ${error.message}</td></tr>`;
             }
         }
 
@@ -385,6 +435,11 @@
                     codesHtml = row.code;
                 }
 
+                // تجهيز زرار التفعيل
+                const isChecked = !row.isDisabled ? 'checked' : '';
+                const statusClass = !row.isDisabled ? 'text-active' : 'text-disabled';
+                const statusText = !row.isDisabled ? 'نشط' : 'معطل';
+
                 html += `
                     <tr>
                         <td>${count}</td>
@@ -393,6 +448,13 @@
                         <td>${monthsHtml}</td> 
                         <td style="direction:ltr; text-align:right;">${row.phone}</td>
                         <td>${dateBadge}</td>
+                        <td style="text-align: center;">
+                            <label class="switch">
+                                <input type="checkbox" ${isChecked} onchange="toggleStudentAccount('${row.uid}', this)">
+                                <span class="slider"></span>
+                            </label>
+                            <span id="status-text-${row.uid}" class="status-text ${statusClass}">${statusText}</span>
+                        </td>
                         <td>
                             <button class="toggle-btn" onclick="toggleDetails('${row.uid}', this)">
                                 <i class="fas fa-chevron-down"></i>
@@ -400,7 +462,7 @@
                         </td>
                     </tr>
                     <tr id="details-${row.uid}" class="details-row">
-                        <td colspan="7" style="padding: 0;">
+                        <td colspan="8" style="padding: 0;">
                             <div class="details-content">
                                 <div>
                                     <span style="font-weight:bold; color:#555;">الإيميل: </span>
@@ -417,11 +479,50 @@
             });
 
             if (count === 0) {
-                tableBody.innerHTML = `<tr><td colspan="7" class="status-msg">لا توجد بيانات مطابقة للمدرس: ${activeTeacher}</td></tr>`;
+                tableBody.innerHTML = `<tr><td colspan="8" class="status-msg">لا توجد بيانات مطابقة للمدرس: ${activeTeacher}</td></tr>`;
             } else {
                 tableBody.innerHTML = html;
             }
         }
+
+        // دالة تغيير حالة الحساب (تفعيل/تعطيل)
+        window.toggleStudentAccount = async function(uid, checkboxElem) {
+            const isActive = checkboxElem.checked;
+            const newIsDisabled = !isActive; 
+            
+            // تعطيل الزرار مؤقتاً لحد ما الريكويست يخلص
+            checkboxElem.disabled = true;
+
+            try {
+                // تحديث الداتا بيز
+                await db.ref(`users/${uid}`).update({
+                    isDisabled: newIsDisabled
+                });
+                
+                // تحديث المصفوفة المحلية عشان لو عمل بحث ميرجعش للحالة القديمة
+                const userRow = allRowsData.find(u => u.uid === uid);
+                if (userRow) userRow.isDisabled = newIsDisabled;
+                
+                // تغيير النص واللون تحت الزرار
+                const statusTextElem = document.getElementById('status-text-' + uid);
+                if (isActive) {
+                    statusTextElem.className = 'status-text text-active';
+                    statusTextElem.innerText = 'نشط';
+                } else {
+                    statusTextElem.className = 'status-text text-disabled';
+                    statusTextElem.innerText = 'معطل';
+                }
+                
+            } catch (error) {
+                console.error("Error updating status:", error);
+                alert("حدث خطأ أثناء محاولة تعديل حالة الحساب.");
+                // إرجاع الزرار لحالته الأصلية لو حصل خطأ
+                checkboxElem.checked = !isActive;
+            } finally {
+                // تشغيل الزرار تاني
+                checkboxElem.disabled = false;
+            }
+        };
 
         window.toggleDetails = function(uid, btnElement) {
             const detailsRow = document.getElementById('details-' + uid);
