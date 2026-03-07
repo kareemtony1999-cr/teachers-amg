@@ -28,15 +28,19 @@
         .question-card { border-right: 4px solid var(--secondary-color); position: relative; }
         .question-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; }
         .question-title { font-weight: bold; color: var(--primary-color); }
-        .delete-q-btn { background: #ffebeb; color: var(--danger-color); border: none; padding: 5px 10px; border-radius: 5px; cursor: pointer; font-size: 12px; }
+        .delete-q-btn { background: #ffebeb; color: var(--danger-color); border: none; padding: 5px 10px; border-radius: 5px; cursor: pointer; font-size: 12px; font-family: 'Tajawal'; }
         
         .options-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 10px; }
         .option-item { display: flex; align-items: center; gap: 5px; background: #f9f9f9; padding: 8px; border-radius: 6px; border: 1px solid #eee; }
-        .option-item input[type="text"] { border: none; background: transparent; width: 100%; outline: none; }
+        .option-item input[type="text"] { border: none; background: transparent; width: 100%; outline: none; font-family: 'Tajawal'; }
         
-        .btn { padding: 12px 24px; border: none; border-radius: 8px; cursor: pointer; font-weight: bold; font-size: 16px; transition: 0.3s; width: 100%; }
+        .btn { padding: 12px 24px; border: none; border-radius: 8px; cursor: pointer; font-weight: bold; font-size: 16px; transition: 0.3s; width: 100%; font-family: 'Tajawal'; }
         .btn-add { background-color: var(--secondary-color); color: white; margin-bottom: 10px; }
         .btn-add:hover { background-color: #8c80f7; }
+        .btn-import { background-color: #0984e3; color: white; margin-bottom: 10px; }
+        .btn-import:hover { background-color: #0b72c2; }
+        .btn-cancel { background-color: var(--danger-color); color: white; }
+        .btn-cancel:hover { background-color: #c0392b; }
         .btn-save { background-color: var(--success-color); color: white; }
         .btn-save:hover { background-color: #00b38b; }
         .btn-disabled { background-color: #ccc !important; cursor: not-allowed; }
@@ -45,7 +49,7 @@
 
         .loading-overlay {
             position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-            background: rgba(0,0,0,0.8); z-index: 999;
+            background: rgba(0,0,0,0.8); z-index: 2000;
             display: none; flex-direction: column; justify-content: center; align-items: center; color: white;
         }
         .spinner {
@@ -60,6 +64,42 @@
             padding: 8px 16px; border-radius: 6px; text-decoration: none;
             font-weight: bold; margin-bottom: 15px; font-size: 14px;
         }
+
+        /* تصميم نافذة استيراد الأسئلة */
+        .modal-overlay {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0,0,0,0.6); z-index: 1000;
+            display: none; justify-content: center; align-items: center;
+        }
+        .modal-content {
+            background: white; padding: 20px; border-radius: 12px; width: 90%; max-width: 700px;
+            height: 85vh; display: flex; flex-direction: column;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.3);
+        }
+        .modal-header {
+            display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;
+            border-bottom: 1px solid #eee; padding-bottom: 10px;
+        }
+        .modal-header h2 { margin: 0; color: var(--primary-color); font-size: 22px; }
+        .modal-body {
+            overflow-y: auto; flex: 1; border: 1px solid #eee; padding: 10px; border-radius: 8px;
+            background: #fafafa;
+        }
+        .modal-footer {
+            margin-top: 15px; display: flex; justify-content: space-between; align-items: center; 
+            border-top: 1px solid #eee; padding-top: 15px;
+        }
+        .q-list-item {
+            display: flex; align-items: flex-start; gap: 15px; padding: 12px; border-bottom: 1px solid #ddd;
+            background: white; margin-bottom: 5px; border-radius: 6px; transition: 0.2s; cursor: pointer;
+        }
+        .q-list-item:hover { background: #f1f1f1; }
+        .q-list-item input[type="checkbox"] { margin-top: 5px; transform: scale(1.4); cursor: pointer; }
+        .q-list-details { flex: 1; pointer-events: none; }
+        .q-list-title { font-weight: bold; margin-bottom: 8px; color: var(--dark-color); display: block; }
+        .q-list-choices { font-size: 14px; color: #555; display: flex; gap: 10px; flex-wrap: wrap;}
+        .q-choice-badge { background: #eee; padding: 4px 8px; border-radius: 4px; border: 1px solid #ccc; }
+        .correct-badge { background: #d4edda; border-color: #c3e6cb; color: #155724; font-weight: bold; }
     </style>
 </head>
 <body>
@@ -90,7 +130,6 @@
             </div>
             <div class="form-group">
                 <label>السنة الدراسية (المدرس)</label>
-                <!-- تم تحديث القائمة لتعرض رسالة الخطأ بوضوح -->
                 <select id="yearSelect" class="form-control">
                     <option value="" disabled selected>-- انتظر تهيئة النظام... --</option>
                 </select>
@@ -105,16 +144,45 @@
 
         <div id="questionsContainer"></div>
 
-        <button class="btn btn-add" onclick="addQuestionUI()">
-            <i class="fas fa-plus"></i> إضافة سؤال جديد
-        </button>
+        <div style="display: flex; gap: 10px; margin-bottom: 10px;">
+            <button class="btn btn-add" onclick="addQuestionUI()">
+                <i class="fas fa-plus"></i> إضافة سؤال يدوي
+            </button>
+            <input type="file" id="jsonFileInput" accept=".json" style="display:none;" onchange="handleJsonFile(event)">
+            <button class="btn btn-import" onclick="document.getElementById('jsonFileInput').click()">
+                <i class="fas fa-file-import"></i> اختيار أسئلة من ملف
+            </button>
+        </div>
 
         <button id="saveBtn" class="btn btn-save btn-disabled" onclick="saveExam()" disabled>
             <i class="fas fa-save"></i> حفظ الامتحان (يرجى الانتظار...)
         </button>
     </div>
 
-    <!-- Firebase Logic (Modular SDK v11) -->
+    <div class="modal-overlay" id="qModal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2>اختيار الأسئلة من الملف</h2>
+                <button style="border:none; background:none; font-size:24px; cursor:pointer; color: #999;" onclick="closeModal()">&times;</button>
+            </div>
+            <div class="form-group" style="margin-bottom: 10px;">
+                <input type="text" id="qSearch" class="form-control" placeholder="ابحث عن سؤال..." onkeyup="filterQuestions()">
+            </div>
+            <div class="modal-body" id="qModalBody">
+                </div>
+            <div class="modal-footer">
+                <div>
+                    <input type="checkbox" id="selectAllChk" onchange="toggleSelectAll(this)" style="transform: scale(1.3); margin-left: 5px; cursor:pointer;">
+                    <label for="selectAllChk" style="font-weight: bold; cursor: pointer;">تحديد الكل المتاح</label>
+                </div>
+                <div style="display: flex; gap: 10px;">
+                    <button class="btn btn-cancel" style="width:auto;" onclick="closeModal()">إلغاء</button>
+                    <button class="btn btn-save" style="width:auto;" onclick="importSelectedQuestions()">استيراد المحددة (<span id="selectedCount">0</span>)</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
         import { getAuth, onAuthStateChanged, signInAnonymously, signInWithCustomToken } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
@@ -150,11 +218,22 @@
 
         let questionCounter = 0;
         let currentUser = null;
+        let loadedQuestions = []; // مصفوفة لحفظ الأسئلة المستوردة من الملف
 
         window.addQuestionUI = addQuestionUI;
         window.saveExam = saveExam;
         window.removeQuestion = removeQuestion;
         window.previewImage = previewImage;
+        
+        // تصدير دوال الاستيراد
+        window.handleJsonFile = handleJsonFile;
+        window.renderQuestionsModal = renderQuestionsModal;
+        window.updateSelectedCount = updateSelectedCount;
+        window.closeModal = closeModal;
+        window.importSelectedQuestions = importSelectedQuestions;
+        window.filterQuestions = filterQuestions;
+        window.toggleSelectAll = toggleSelectAll;
+        window.toggleCheckbox = toggleCheckbox;
 
         // 2. المصادقة
         const initAuth = async () => {
@@ -218,8 +297,6 @@
                      }
                 } catch (e) {
                     console.error("Error fetching teacher data:", e);
-                    
-                    // كشف خطأ الصلاحيات وعرض رسالة واضحة
                     if (e.message && e.message.includes("permission_denied")) {
                         yearSelect.innerHTML = '<option disabled style="color:red">خطأ: لا تملك صلاحية القراءة (تأكد من Rules)</option>';
                         alert("عفواً، قاعدة البيانات ترفض الوصول. يرجى التأكد من تعديل الـ Realtime Database Rules في Firebase Console.");
@@ -261,7 +338,6 @@
                 }
             } catch (e) {
                 console.error(e);
-                // التعامل مع أخطاء الصلاحيات في الشهور أيضاً
                 if (e.message && e.message.includes("permission_denied")) {
                     monthSelect.innerHTML = '<option disabled>خطأ صلاحيات (Rules)</option>';
                 } else {
@@ -270,7 +346,7 @@
             }
         }
 
-        // ================= دوال الواجهة =================
+        // ================= دوال الواجهة للأسئلة =================
         function addQuestionUI() {
             questionCounter++;
             const container = document.getElementById('questionsContainer');
@@ -322,7 +398,169 @@
             }
         }
 
-        // ================= دالة الحفظ (مع الرفع الثنائي وتصحيح المسار) =================
+        // ================= دوال استيراد الأسئلة من ملف JSON =================
+        function handleJsonFile(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+
+            const loadingOverlay = document.getElementById('loadingOverlay');
+            const loadingText = document.getElementById('loadingText');
+            loadingText.innerText = 'جاري قراءة الملف...';
+            loadingOverlay.style.display = 'flex';
+
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                loadingOverlay.style.display = 'none';
+                try {
+                    const data = JSON.parse(e.target.result);
+                    if (data.questions && Array.isArray(data.questions)) {
+                        loadedQuestions = data.questions;
+                    } else if (Array.isArray(data)) {
+                        loadedQuestions = data;
+                    } else {
+                        alert('صيغة الملف غير مدعومة. يجب أن يحتوي الملف على مصفوفة أسئلة.');
+                        return;
+                    }
+                    renderQuestionsModal();
+                } catch (err) {
+                    alert('حدث خطأ أثناء قراءة الملف. تأكد من أنه بصيغة JSON صحيحة.\n' + err.message);
+                }
+                event.target.value = ''; // Reset input to allow selecting same file again
+            };
+            reader.onerror = function() {
+                loadingOverlay.style.display = 'none';
+                alert('تعذر قراءة الملف.');
+            };
+            reader.readAsText(file);
+        }
+
+        function renderQuestionsModal() {
+            const modal = document.getElementById('qModal');
+            const body = document.getElementById('qModalBody');
+            document.getElementById('selectedCount').innerText = '0';
+            document.getElementById('qSearch').value = '';
+            document.getElementById('selectAllChk').checked = false;
+            
+            let html = '';
+            loadedQuestions.forEach((q, index) => {
+                let choicesHtml = '';
+                if(q.choices) {
+                    choicesHtml = q.choices.map(c => {
+                        const isCorrect = (String(c).trim() === String(q.correct_answer).trim());
+                        return `<span class="q-choice-badge ${isCorrect ? 'correct-badge' : ''}">${c}</span>`;
+                    }).join('');
+                }
+                
+                html += `
+                <div class="q-list-item" data-index="${index}" onclick="toggleCheckbox('q_chk_${index}', event)">
+                    <input type="checkbox" class="q-checkbox" id="q_chk_${index}" value="${index}" onchange="updateSelectedCount()">
+                    <div class="q-list-details">
+                        <label class="q-list-title">${q.question}</label>
+                        <div class="q-list-choices">
+                            ${choicesHtml}
+                        </div>
+                    </div>
+                </div>
+                `;
+            });
+            body.innerHTML = html;
+            modal.style.display = 'flex';
+        }
+
+        function toggleCheckbox(id, event) {
+            if(event.target.tagName.toLowerCase() !== 'input') {
+                const chk = document.getElementById(id);
+                chk.checked = !chk.checked;
+                updateSelectedCount();
+            }
+        }
+
+        function updateSelectedCount() {
+            const selected = document.querySelectorAll('.q-checkbox:checked').length;
+            document.getElementById('selectedCount').innerText = selected;
+        }
+
+        function toggleSelectAll(checkbox) {
+            const items = document.querySelectorAll('.q-list-item');
+            items.forEach(item => {
+                if (item.style.display !== 'none') {
+                    const chk = item.querySelector('.q-checkbox');
+                    chk.checked = checkbox.checked;
+                }
+            });
+            updateSelectedCount();
+        }
+
+        function closeModal() {
+            document.getElementById('qModal').style.display = 'none';
+        }
+
+        function filterQuestions() {
+            const term = document.getElementById('qSearch').value.toLowerCase();
+            const items = document.querySelectorAll('.q-list-item');
+            items.forEach(item => {
+                const text = item.querySelector('.q-list-title').innerText.toLowerCase();
+                if (text.includes(term)) {
+                    item.style.display = 'flex';
+                } else {
+                    item.style.display = 'none';
+                }
+            });
+            document.getElementById('selectAllChk').checked = false;
+        }
+
+        function importSelectedQuestions() {
+            const checkboxes = document.querySelectorAll('.q-checkbox:checked');
+            if (checkboxes.length === 0) {
+                alert('الرجاء تحديد سؤال واحد على الأقل.');
+                return;
+            }
+            
+            checkboxes.forEach(chk => {
+                const index = chk.value;
+                const qData = loadedQuestions[index];
+                addQuestionFromData(qData);
+            });
+            
+            closeModal();
+        }
+
+        function addQuestionFromData(qData) {
+            addQuestionUI(); // إنشاء كارت سؤال جديد
+            
+            const container = document.getElementById('questionsContainer');
+            const cards = container.querySelectorAll('.question-card');
+            const latestCard = cards[cards.length - 1]; 
+            
+            const qTextInput = latestCard.querySelector('.q-text');
+            qTextInput.value = qData.question || "";
+            
+            const optionInputs = latestCard.querySelectorAll('.q-option');
+            const radios = latestCard.querySelectorAll('input[type="radio"]');
+            
+            // إعادة ضبط جميع الاختيارات
+            radios.forEach(r => r.checked = false);
+            
+            let matchedCorrect = false;
+
+            for(let i = 0; i < 4; i++) {
+                if (qData.choices && qData.choices[i] !== undefined) {
+                    optionInputs[i].value = qData.choices[i];
+                    // مقارنة الإجابة وتحديد الخيار الصحيح
+                    if (qData.correct_answer !== undefined && String(qData.choices[i]).trim() === String(qData.correct_answer).trim()) {
+                        radios[i].checked = true;
+                        matchedCorrect = true;
+                    }
+                }
+            }
+            
+            // وضع الافتراضي على الخيار الأول إذا لم يتطابق شيء
+            if (!matchedCorrect && qData.correct_answer !== undefined) {
+               radios[0].checked = true; 
+            }
+        }
+
+        // ================= دالة الحفظ =================
         async function saveExam() {
             if (!currentUser) return alert('يرجى إعادة تسجيل الدخول');
 
@@ -398,9 +636,6 @@
                     createdBy: currentUser.uid 
                 };
 
-                // [تصحيح المسار] بناءً على القواعد: exams -> $year -> $examId
-                // المسار الصحيح هو: exams/YearName/ExamId
-                // بدلاً من: YearName/ExamId (الذي كان يسبب خطأ Permission Denied في الجذر)
                 await set(ref(db, `exams/${yearKey}/${examId}`), examData);
 
                 loadingText.innerText = 'تم الحفظ!';
@@ -412,7 +647,6 @@
             } catch (error) {
                 console.error("Save Error:", error);
                 
-                // تحسين رسالة الخطأ عند الحفظ أيضاً
                 if (error.message && error.message.includes("permission_denied")) {
                     alert('❌ خطأ: تم رفض الحفظ (Permission Denied). يرجى التأكد من أنك تملك صلاحية التعديل على هذه السنة الدراسية.');
                 } else {
