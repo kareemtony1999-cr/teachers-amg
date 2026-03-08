@@ -95,7 +95,7 @@
             display: inline-block;
             width: 44px;
             height: 24px;
-            direction: ltr; /* لجعل الزرار يتحرك بشكل صحيح يمين/يسار */
+            direction: ltr; 
         }
         .switch input { 
             opacity: 0;
@@ -106,7 +106,7 @@
             position: absolute;
             cursor: pointer;
             top: 0; left: 0; right: 0; bottom: 0;
-            background-color: #E74C3C; /* لون أحمر للتعطيل */
+            background-color: #E74C3C; 
             transition: .4s;
             border-radius: 24px;
         }
@@ -122,7 +122,7 @@
             border-radius: 50%;
         }
         input:checked + .slider {
-            background-color: #27AE60; /* لون أخضر للتفعيل */
+            background-color: #27AE60; 
         }
         input:checked + .slider:before {
             transform: translateX(20px);
@@ -135,6 +135,51 @@
         }
         .text-active { color: #27AE60; }
         .text-disabled { color: #E74C3C; }
+
+        /* --- نافذة الباسورد المنبثقة --- */
+        .modal {
+            display: none; 
+            position: fixed; 
+            z-index: 1000; 
+            left: 0;
+            top: 0;
+            width: 100%; 
+            height: 100%; 
+            background-color: rgba(0,0,0,0.5); 
+            justify-content: center;
+            align-items: center;
+        }
+        .modal-content {
+            background-color: #fff;
+            padding: 20px;
+            border-radius: 10px;
+            width: 300px;
+            text-align: center;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.3);
+        }
+        .modal-content h3 { margin-top: 0; color: var(--primary-color); }
+        .modal-content input {
+            width: 90%;
+            padding: 10px;
+            margin: 15px 0;
+            border: 1px solid #ccc;
+            border-radius: 5px;
+            font-family: 'Tajawal';
+            text-align: center;
+        }
+        .modal-buttons { display: flex; justify-content: space-between; gap: 10px; }
+        .modal-btn {
+            flex: 1;
+            padding: 10px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-weight: bold;
+            font-family: 'Tajawal';
+            color: white;
+        }
+        .btn-confirm { background-color: var(--primary-color); }
+        .btn-cancel { background-color: #95a5a6; }
 
         /* --- تحسينات الموبايل (Media Queries) --- */
         @media (max-width: 768px) {
@@ -212,6 +257,18 @@
         </div>
     </div>
 
+    <div id="passwordModal" class="modal">
+        <div class="modal-content">
+            <h3>تأكيد العملية</h3>
+            <p style="font-size: 14px; color: #555;">يرجى إدخال كلمة مرور المشرف العام لتغيير حالة الطالب:</p>
+            <input type="password" id="adminPasswordInput" placeholder="كلمة المرور...">
+            <div class="modal-buttons">
+                <button class="modal-btn btn-confirm" onclick="verifyPasswordAndToggle()">تأكيد</button>
+                <button class="modal-btn btn-cancel" onclick="closePasswordModal()">إلغاء</button>
+            </div>
+        </div>
+    </div>
+
     <script src="https://www.gstatic.com/firebasejs/9.6.10/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.6.10/firebase-auth-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.6.10/firebase-database-compat.js"></script>
@@ -234,6 +291,11 @@
         let activeTeacher = localStorage.getItem('selectedTeacher');
         let isAdmin = false;
         const THIRTY_DAYS_MS = 30 * 24 * 60 * 60 * 1000;
+
+        // متغيرات للتحكم في الزرار اللي اتداس عليه عشان نرجع حالته لو الباسورد غلط
+        let pendingToggleUid = null;
+        let pendingCheckboxElem = null;
+        let pendingIsActive = null;
 
         auth.onAuthStateChanged(async user => {
             if (user) {
@@ -356,9 +418,8 @@
                             const monthInfo = monthDetailsMap[monthId];
                             
                             if (monthInfo && monthInfo.teacher === activeTeacher) {
-                                // حساب الأيام المتبقية للشهر المعني
                                 let remainingDays = Math.ceil((expiryDate - now) / (1000 * 60 * 60 * 24));
-                                if (remainingDays < 0) remainingDays = 0; // إذا انتهى الشهر
+                                if (remainingDays < 0) remainingDays = 0; 
                                 
                                 activeMonthsList.push(`${monthInfo.name} (${remainingDays} يوم)`);
 
@@ -382,7 +443,7 @@
                         activeMonths: activeMonthsList,
                         email: userData.email || 'غير متوفر',
                         password: userData.password || 'غير متوفر',
-                        isDisabled: userData.isDisabled || false // إضافة حالة التفعيل
+                        isDisabled: userData.isDisabled || false 
                     });
                 }
 
@@ -435,7 +496,6 @@
                     codesHtml = row.code;
                 }
 
-                // تجهيز زرار التفعيل
                 const isChecked = !row.isDisabled ? 'checked' : '';
                 const statusClass = !row.isDisabled ? 'text-active' : 'text-disabled';
                 const statusText = !row.isDisabled ? 'نشط' : 'معطل';
@@ -450,7 +510,7 @@
                         <td>${dateBadge}</td>
                         <td style="text-align: center;">
                             <label class="switch">
-                                <input type="checkbox" ${isChecked} onchange="toggleStudentAccount('${row.uid}', this)">
+                                <input type="checkbox" ${isChecked} onchange="initiateToggle('${row.uid}', this)">
                                 <span class="slider"></span>
                             </label>
                             <span id="status-text-${row.uid}" class="status-text ${statusClass}">${statusText}</span>
@@ -485,25 +545,66 @@
             }
         }
 
-        // دالة تغيير حالة الحساب (تفعيل/تعطيل)
-        window.toggleStudentAccount = async function(uid, checkboxElem) {
-            const isActive = checkboxElem.checked;
-            const newIsDisabled = !isActive; 
-            
-            // تعطيل الزرار مؤقتاً لحد ما الريكويست يخلص
-            checkboxElem.disabled = true;
+        // 1. عند الضغط على الزرار، نفتح نافذة الباسورد ونحفظ البيانات
+        window.initiateToggle = function(uid, checkboxElem) {
+            pendingUid = uid;
+            pendingCheckboxElem = checkboxElem;
+            pendingIsActive = checkboxElem.checked; 
+
+            document.getElementById('adminPasswordInput').value = '';
+            document.getElementById('passwordModal').style.display = 'flex';
+        };
+
+        // 2. إذا ألغى العملية، نرجع الزرار لحالته
+        window.closePasswordModal = function() {
+            document.getElementById('passwordModal').style.display = 'none';
+            if (pendingCheckboxElem) {
+                pendingCheckboxElem.checked = !pendingIsActive; // إرجاع للحالة القديمة
+            }
+        };
+
+        // 3. التحقق من الباسورد وتنفيذ التعطيل/التفعيل
+        window.verifyPasswordAndToggle = async function() {
+            const inputPass = document.getElementById('adminPasswordInput').value;
+            if (!inputPass) return alert("يرجى إدخال كلمة المرور");
 
             try {
-                // تحديث الداتا بيز
+                // جلب باسورد الأدمن من الداتا بيز
+                const passSnap = await db.ref('admin/password').once('value');
+                const correctPass = passSnap.val();
+
+                if (inputPass === correctPass) {
+                    // الباسورد صحيح -> نفذ التعديل
+                    document.getElementById('passwordModal').style.display = 'none';
+                    await executeToggle();
+                } else {
+                    // الباسورد غلط
+                    alert("كلمة المرور خاطئة!");
+                    closePasswordModal();
+                }
+            } catch (error) {
+                console.error("Error verifying password:", error);
+                alert("حدث خطأ في الاتصال بقاعدة البيانات.");
+                closePasswordModal();
+            }
+        };
+
+        // 4. تنفيذ العملية في الداتا بيز
+        async function executeToggle() {
+            const uid = pendingUid;
+            const isActive = pendingIsActive;
+            const newIsDisabled = !isActive; 
+            
+            pendingCheckboxElem.disabled = true;
+
+            try {
                 await db.ref(`users/${uid}`).update({
                     isDisabled: newIsDisabled
                 });
                 
-                // تحديث المصفوفة المحلية عشان لو عمل بحث ميرجعش للحالة القديمة
                 const userRow = allRowsData.find(u => u.uid === uid);
                 if (userRow) userRow.isDisabled = newIsDisabled;
                 
-                // تغيير النص واللون تحت الزرار
                 const statusTextElem = document.getElementById('status-text-' + uid);
                 if (isActive) {
                     statusTextElem.className = 'status-text text-active';
@@ -516,13 +617,11 @@
             } catch (error) {
                 console.error("Error updating status:", error);
                 alert("حدث خطأ أثناء محاولة تعديل حالة الحساب.");
-                // إرجاع الزرار لحالته الأصلية لو حصل خطأ
-                checkboxElem.checked = !isActive;
+                pendingCheckboxElem.checked = !isActive;
             } finally {
-                // تشغيل الزرار تاني
-                checkboxElem.disabled = false;
+                pendingCheckboxElem.disabled = false;
             }
-        };
+        }
 
         window.toggleDetails = function(uid, btnElement) {
             const detailsRow = document.getElementById('details-' + uid);
@@ -537,7 +636,6 @@
 
         window.copyData = function(element, text) {
             if (text === 'غير متوفر') return;
-            
             const originalHTML = element.innerHTML;
 
             if (navigator.clipboard && window.isSecureContext) {
