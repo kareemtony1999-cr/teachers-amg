@@ -97,86 +97,49 @@
             height: 24px;
             direction: ltr; 
         }
-        .switch input { 
-            opacity: 0;
-            width: 0;
-            height: 0;
-        }
+        .switch input { opacity: 0; width: 0; height: 0; }
         .slider {
-            position: absolute;
-            cursor: pointer;
-            top: 0; left: 0; right: 0; bottom: 0;
-            background-color: #E74C3C; 
-            transition: .4s;
-            border-radius: 24px;
+            position: absolute; cursor: pointer; top: 0; left: 0; right: 0; bottom: 0;
+            background-color: #E74C3C; transition: .4s; border-radius: 24px;
         }
         .slider:before {
-            position: absolute;
-            content: "";
-            height: 18px;
-            width: 18px;
-            left: 3px;
-            bottom: 3px;
-            background-color: white;
-            transition: .4s;
-            border-radius: 50%;
+            position: absolute; content: ""; height: 18px; width: 18px; left: 3px; bottom: 3px;
+            background-color: white; transition: .4s; border-radius: 50%;
         }
-        input:checked + .slider {
-            background-color: #27AE60; 
-        }
-        input:checked + .slider:before {
-            transform: translateX(20px);
-        }
-        .status-text {
-            font-size: 12px;
-            font-weight: bold;
-            display: block;
-            margin-top: 5px;
-        }
+        input:checked + .slider { background-color: #27AE60; }
+        input:checked + .slider:before { transform: translateX(20px); }
+        .status-text { font-size: 12px; font-weight: bold; display: block; margin-top: 5px; }
         .text-active { color: #27AE60; }
         .text-disabled { color: #E74C3C; }
 
-        /* --- نافذة الباسورد المنبثقة --- */
+        /* --- زرار إضافة الكود الجديد --- */
+        .btn-add-code {
+            background-color: #3498db; color: white; border: none; border-radius: 5px;
+            padding: 6px 10px; cursor: pointer; font-size: 12px; font-family: 'Tajawal';
+            font-weight: bold; transition: 0.3s; display: inline-flex; align-items: center; gap: 5px;
+            margin-top: 5px;
+        }
+        .btn-add-code:hover { background-color: #2980b9; transform: translateY(-1px); }
+
+        /* --- النوافذ المنبثقة (Modals) --- */
         .modal {
-            display: none; 
-            position: fixed; 
-            z-index: 1000; 
-            left: 0;
-            top: 0;
-            width: 100%; 
-            height: 100%; 
-            background-color: rgba(0,0,0,0.5); 
-            justify-content: center;
-            align-items: center;
+            display: none; position: fixed; z-index: 1000; left: 0; top: 0;
+            width: 100%; height: 100%; background-color: rgba(0,0,0,0.5); 
+            justify-content: center; align-items: center;
         }
         .modal-content {
-            background-color: #fff;
-            padding: 20px;
-            border-radius: 10px;
-            width: 300px;
-            text-align: center;
-            box-shadow: 0 5px 15px rgba(0,0,0,0.3);
+            background-color: #fff; padding: 20px; border-radius: 10px;
+            width: 320px; text-align: center; box-shadow: 0 5px 15px rgba(0,0,0,0.3);
         }
         .modal-content h3 { margin-top: 0; color: var(--primary-color); }
         .modal-content input {
-            width: 90%;
-            padding: 10px;
-            margin: 15px 0;
-            border: 1px solid #ccc;
-            border-radius: 5px;
-            font-family: 'Tajawal';
-            text-align: center;
+            width: 90%; padding: 10px; margin: 15px 0; border: 1px solid #ccc;
+            border-radius: 5px; font-family: 'Tajawal'; text-align: center;
         }
         .modal-buttons { display: flex; justify-content: space-between; gap: 10px; }
         .modal-btn {
-            flex: 1;
-            padding: 10px;
-            border: none;
-            border-radius: 5px;
-            cursor: pointer;
-            font-weight: bold;
-            font-family: 'Tajawal';
-            color: white;
+            flex: 1; padding: 10px; border: none; border-radius: 5px;
+            cursor: pointer; font-weight: bold; font-family: 'Tajawal'; color: white;
         }
         .btn-confirm { background-color: var(--primary-color); }
         .btn-cancel { background-color: #95a5a6; }
@@ -186,13 +149,10 @@
             .navbar { justify-content: flex-start; overflow-x: auto; padding-bottom: 10px; }
             .teacher-select-container { border-left: none; margin-left: 0; padding-left: 0; width: 100%; margin-top: 10px; border-top: 1px solid #eee; padding-top: 10px; }
             #globalTeacherSelect { width: 100%; }
-            
             header { flex-direction: column; text-align: center; }
             header h2 { font-size: 18px; margin: 10px 0; }
-            
             .controls { padding: 10px; }
             .action-btn { width: 100%; margin-top: 5px; }
-            
             th, td { padding: 10px 5px; font-size: 13px; }
             .details-content { flex-direction: column; gap: 15px; align-items: stretch; text-align: center; }
         }
@@ -203,9 +163,7 @@
     <div id="page-wrapper">
         <div class="navbar">
             <a href="activation_stats.html" class="nav-btn active"><i class="fas fa-users"></i> الطلاب</a>
-            
             <a href="d3m.html" class="nav-btn"><i class="fas fa-headset"></i> دعم الطلاب</a>
-            
             <a href="view.html" class="nav-btn"><i class="fas fa-eye"></i> المشاهدات</a>
             <a href="exam_degrees.html" class="nav-btn"><i class="fas fa-poll"></i> الامتحانات</a>
             <a href="create_exam.html" class="nav-btn"><i class="fas fa-file-signature"></i> إنشاء امتحان</a>
@@ -246,7 +204,7 @@
                             <th width="12%">رقم الهاتف</th>
                             <th width="15%">تاريخ آخر تفعيل</th>
                             <th width="12%">الحالة</th> 
-                            <th width="8%">تفاصيل</th> 
+                            <th width="8%">إجراءات</th> 
                         </tr>
                     </thead>
                     <tbody id="tableBody">
@@ -260,11 +218,23 @@
     <div id="passwordModal" class="modal">
         <div class="modal-content">
             <h3>تأكيد العملية</h3>
-            <p style="font-size: 14px; color: #555;">يرجى إدخال كلمة مرور المشرف العام لتغيير حالة الطالب:</p>
+            <p style="font-size: 14px; color: #555;">يرجى إدخال كلمة مرور المشرف لتغيير حالة الطالب:</p>
             <input type="password" id="adminPasswordInput" placeholder="كلمة المرور...">
             <div class="modal-buttons">
                 <button class="modal-btn btn-confirm" onclick="verifyPasswordAndToggle()">تأكيد</button>
                 <button class="modal-btn btn-cancel" onclick="closePasswordModal()">إلغاء</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="activationModal" class="modal">
+        <div class="modal-content">
+            <h3><i class="fas fa-key"></i> تفعيل كود للطالب</h3>
+            <p style="font-size: 14px; color: #555; margin-bottom: 5px;" id="activationStudentName"></p>
+            <input type="text" id="manualCodeInput" placeholder="أدخل الكود الجديد هنا...">
+            <div class="modal-buttons">
+                <button class="modal-btn btn-confirm" id="confirmActivationBtn" onclick="executeManualActivation()">تفعيل الكود</button>
+                <button class="modal-btn btn-cancel" onclick="closeActivationModal()">إلغاء</button>
             </div>
         </div>
     </div>
@@ -292,10 +262,11 @@
         let isAdmin = false;
         const THIRTY_DAYS_MS = 30 * 24 * 60 * 60 * 1000;
 
-        // متغيرات للتحكم في الزرار اللي اتداس عليه عشان نرجع حالته لو الباسورد غلط
+        // متغيرات للتحكم في النوافذ
         let pendingToggleUid = null;
         let pendingCheckboxElem = null;
         let pendingIsActive = null;
+        let pendingActivationUid = null;
 
         auth.onAuthStateChanged(async user => {
             if (user) {
@@ -404,6 +375,7 @@
                 const now = Date.now();
 
                 for (const [uid, userData] of Object.entries(usersObj)) {
+                    // هنا يتم تصفية الطلاب ليكونوا تابعين للمدرس النشط فقط
                     if (userData.year !== activeTeacher) {
                         continue; 
                     }
@@ -515,9 +487,13 @@
                             </label>
                             <span id="status-text-${row.uid}" class="status-text ${statusClass}">${statusText}</span>
                         </td>
-                        <td>
+                        <td style="text-align:center;">
                             <button class="toggle-btn" onclick="toggleDetails('${row.uid}', this)">
                                 <i class="fas fa-chevron-down"></i>
+                            </button>
+                            <br>
+                            <button class="btn-add-code" onclick="openActivationModal('${row.uid}', '${row.fullName}')" title="تفعيل كود للطالب">
+                                <i class="fas fa-key"></i> تفعيل
                             </button>
                         </td>
                     </tr>
@@ -545,9 +521,9 @@
             }
         }
 
-        // 1. عند الضغط على الزرار، نفتح نافذة الباسورد ونحفظ البيانات
+        // --- دوال التعطيل والتفعيل بالباسورد ---
         window.initiateToggle = function(uid, checkboxElem) {
-            pendingUid = uid;
+            pendingToggleUid = uid;
             pendingCheckboxElem = checkboxElem;
             pendingIsActive = checkboxElem.checked; 
 
@@ -555,30 +531,25 @@
             document.getElementById('passwordModal').style.display = 'flex';
         };
 
-        // 2. إذا ألغى العملية، نرجع الزرار لحالته
         window.closePasswordModal = function() {
             document.getElementById('passwordModal').style.display = 'none';
             if (pendingCheckboxElem) {
-                pendingCheckboxElem.checked = !pendingIsActive; // إرجاع للحالة القديمة
+                pendingCheckboxElem.checked = !pendingIsActive; 
             }
         };
 
-        // 3. التحقق من الباسورد وتنفيذ التعطيل/التفعيل
         window.verifyPasswordAndToggle = async function() {
             const inputPass = document.getElementById('adminPasswordInput').value;
             if (!inputPass) return alert("يرجى إدخال كلمة المرور");
 
             try {
-                // جلب باسورد الأدمن من الداتا بيز
                 const passSnap = await db.ref('admin/password').once('value');
                 const correctPass = passSnap.val();
 
                 if (inputPass === correctPass) {
-                    // الباسورد صحيح -> نفذ التعديل
                     document.getElementById('passwordModal').style.display = 'none';
                     await executeToggle();
                 } else {
-                    // الباسورد غلط
                     alert("كلمة المرور خاطئة!");
                     closePasswordModal();
                 }
@@ -589,9 +560,8 @@
             }
         };
 
-        // 4. تنفيذ العملية في الداتا بيز
         async function executeToggle() {
-            const uid = pendingUid;
+            const uid = pendingToggleUid;
             const isActive = pendingIsActive;
             const newIsDisabled = !isActive; 
             
@@ -623,6 +593,86 @@
             }
         }
 
+        // --- دوال التفعيل اليدوي للكود ---
+        window.openActivationModal = function(uid, name) {
+            pendingActivationUid = uid;
+            document.getElementById('activationStudentName').innerText = `الطالب: ${name}`;
+            document.getElementById('manualCodeInput').value = '';
+            document.getElementById('activationModal').style.display = 'flex';
+        };
+
+        window.closeActivationModal = function() {
+            document.getElementById('activationModal').style.display = 'none';
+            pendingActivationUid = null;
+        };
+
+        window.executeManualActivation = async function() {
+            const uid = pendingActivationUid;
+            const code = document.getElementById('manualCodeInput').value.trim();
+            const btn = document.getElementById('confirmActivationBtn');
+
+            if(!code) return alert("يرجى إدخال الكود!");
+
+            btn.disabled = true;
+            btn.innerText = "جاري التفعيل...";
+
+            try {
+                const codeSnap = await db.ref(`codes/${code}`).once('value');
+                if(!codeSnap.exists()) {
+                    alert("هذا الكود غير موجود في النظام!");
+                    return;
+                }
+
+                const codeData = codeSnap.val();
+
+                // 🔴 الحماية الجديدة: التحقق من تطابق المدرس! 🔴
+                // لا يمكن تفعيل كود لمدرس معين لطالب موجود في صفحة مدرس آخر
+                if (codeData.server !== activeTeacher) {
+                    alert(`❌ خطأ: هذا الكود مخصص لـ (${codeData.server || 'غير معروف'}) ولا يمكن استخدامه لطالب في (${activeTeacher})!`);
+                    return;
+                }
+
+                if(codeData.isUsed) {
+                    alert("هذا الكود تم استخدامه من قبل!");
+                    return;
+                }
+
+                const monthsToActivate = codeData.months || [];
+                if (monthsToActivate.length === 0) {
+                    alert("هذا الكود لا يحتوي على أي شهور مسجلة!");
+                    return;
+                }
+
+                // حساب تاريخ الانتهاء (بعد 30 يوم من الآن)
+                const expiryTimestamp = Date.now() + THIRTY_DAYS_MS;
+                const updates = {};
+                
+                // حرق الكود وربطه بالطالب
+                updates[`codes/${code}/isUsed`] = true;
+                updates[`codes/${code}/usedBy`] = uid;
+                updates[`users/${uid}/ncode`] = code; 
+
+                // إضافة الشهور للطالب
+                monthsToActivate.forEach(monthId => {
+                    updates[`student_month_access/${uid}/${monthId}`] = expiryTimestamp;
+                });
+
+                await db.ref().update(updates);
+                
+                alert("تم تفعيل الكود بنجاح!");
+                closeActivationModal();
+                initPage(); // إعادة تحميل الجدول ليظهر الكود والشهور الجديدة
+
+            } catch (error) {
+                console.error(error);
+                alert("حدث خطأ أثناء التفعيل!");
+            } finally {
+                btn.disabled = false;
+                btn.innerText = "تفعيل الكود";
+            }
+        };
+
+        // --- دوال أخرى ---
         window.toggleDetails = function(uid, btnElement) {
             const detailsRow = document.getElementById('details-' + uid);
             if (detailsRow.style.display === 'table-row') {
