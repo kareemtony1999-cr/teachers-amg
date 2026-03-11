@@ -47,11 +47,30 @@
         .chat-list { 
             flex: 1; 
             overflow-y: auto; 
-            -webkit-overflow-scrolling: touch; /* تمرير ناعم على الهواتف */
+            -webkit-overflow-scrolling: touch; 
         }
-        .chat-item { display: flex; align-items: center; padding: 15px; cursor: pointer; border-bottom: 1px solid #f8f9fa; }
+        .chat-item { display: flex; align-items: center; padding: 15px; cursor: pointer; border-bottom: 1px solid #f8f9fa; transition: background 0.2s;}
         .chat-item:hover { background: #f5f6f6; }
+        .chat-item.active-chat { background: #ebebeb; } /* تمييز الشات المفتوح حالياً */
+        
         .avatar { width: 48px; height: 48px; background: var(--primary); color: #fff; border-radius: 50%; display: flex; align-items: center; justify-content: center; margin-left: 15px; font-weight: bold; flex-shrink: 0;}
+
+        /* 🔴 الشارة الحمراء للرسائل غير المقروءة 🔴 */
+        .unread-badge {
+            background-color: #e74c3c;
+            color: white;
+            font-size: 12px;
+            font-weight: bold;
+            min-width: 22px;
+            height: 22px;
+            border-radius: 11px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 0 6px;
+            margin-right: 10px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+        }
 
         /* منطقة المحادثة */
         .main-chat { flex: 1; display: flex; flex-direction: column; background: #e5ddd5; border-left: 1px solid #ddd; height: 100%; }
@@ -61,7 +80,7 @@
             flex: 1; 
             padding: 25px; 
             overflow-y: auto; 
-            -webkit-overflow-scrolling: touch; /* تمرير ناعم على الهواتف */
+            -webkit-overflow-scrolling: touch; 
             display: flex; 
             flex-direction: column; 
             background-image: url('https://user-images.githubusercontent.com/15075759/28719144-86dc0f70-73b1-11e7-911d-60d70fcded21.png'); 
@@ -89,7 +108,6 @@
         @media (max-width: 768px) {
             #admin-panel { display: block; }
             
-            /* القائمة الجانبية في الموبايل تأخذ الشاشة بالكامل وتكون فوق الشات */
             .sidebar { 
                 width: 100%; 
                 position: absolute; 
@@ -99,17 +117,15 @@
                 transition: transform 0.3s ease-in-out; 
             }
             
-            /* عند الدخول لشات، القائمة الجانبية تنزلق لليمين لتختفي */
             .sidebar.hidden { transform: translateX(100%); } 
 
-            /* الشات في الموبايل يأخذ الشاشة بالكامل ويكون في الخلفية */
             .main-chat { width: 100%; position: absolute; top: 0; right: 0; z-index: 5; }
             
-            .back-btn { display: block; } /* إظهار زر الرجوع في الموبايل */
+            .back-btn { display: block; } 
             
             #messages-container { padding: 15px; }
             .message { max-width: 85%; }
-            .delete-btn-icon { opacity: 1; font-size: 18px; } /* جعل زر الحذف أوضح في الموبايل */
+            .delete-btn-icon { opacity: 1; font-size: 18px; } 
         }
     </style>
 </head>
@@ -178,6 +194,7 @@
         let selectedServer = "";
         let currentChatPath = "";
         let currentStudentName = "";
+        let chatListenerRef = null; // 🌟 المتغير المسؤول عن حل مشكلة تداخل الشاتات
 
         auth.onAuthStateChanged(user => {
             if (!user) {
@@ -215,6 +232,21 @@
 
         function filterChatsByServer() {
             selectedServer = document.getElementById('server-select').value;
+            // تصفير الشات المفتوح عند تغيير السيرفر
+            currentChatPath = "";
+            currentStudentName = "";
+            
+            // 🌟 إغلاق الاتصال بالشات القديم عند تغيير السيرفر
+            if (chatListenerRef) { chatListenerRef.off(); chatListenerRef = null; }
+            
+            document.getElementById('chat-header').style.display = 'none';
+            document.getElementById('input-area').style.display = 'none';
+            document.getElementById('messages-container').innerHTML = `
+                <div style="display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100%; color: #777; text-align: center;">
+                    <i class="fab fa-whatsapp" style="font-size: 80px; color: #ccc; margin-bottom: 20px;"></i>
+                    <h2>AMG Web Support</h2>
+                    <p>اختر طالباً من القائمة للبدء</p>
+                </div>`;
             fetchChats();
         }
 
@@ -223,14 +255,60 @@
                 const listDiv = document.getElementById('chat-list');
                 listDiv.innerHTML = '';
                 const students = snap.val();
+                
                 if (students) {
+                    let studentArray = [];
+                    
+                    // 🌟 حساب عدد الرسائل غير المقروءة لكل طالب ومعرفة آخر رسالة للترتيب
                     for (let name in students) {
+                        const msgs = students[name];
+                        let unreadCount = 0;
+                        let lastTimestamp = 0;
+                        
+                        if (msgs) {
+                            Object.values(msgs).forEach(m => {
+                                if (m.timestamp > lastTimestamp) lastTimestamp = m.timestamp;
+                                if (m.isFromAdmin === false && m.isRead === false) {
+                                    unreadCount++;
+                                }
+                            });
+                        }
+                        studentArray.push({ name, unreadCount, lastTimestamp });
+                    }
+                    
+                    // 🌟 ترتيب المحادثات بحيث تظهر المحادثات التي بها رسائل جديدة أولاً
+                    studentArray.sort((a, b) => b.lastTimestamp - a.lastTimestamp);
+
+                    studentArray.forEach(studentObj => {
+                        const name = studentObj.name;
+                        const unread = studentObj.unreadCount;
+                        
                         const item = document.createElement('div');
                         item.className = 'chat-item';
+                        
+                        // تمييز الشات المفتوح حالياً بلون مختلف
+                        if (`support_chats/${selectedServer}/${name}` === currentChatPath) {
+                            item.classList.add('active-chat');
+                        }
+
                         item.onclick = () => openChat(selectedServer, name);
-                        item.innerHTML = `<div class="avatar">${name[0]}</div><div><b style="color:#111">${name}</b><div style="font-size:12px;color:#667781">${selectedServer}</div></div>`;
+                        
+                        // 🌟 تجهيز دائرة الرسائل غير المقروءة الحمراء
+                        let badgeHtml = '';
+                        if (unread > 0) {
+                            badgeHtml = `<div class="unread-badge">${unread}</div>`;
+                        }
+
+                        item.innerHTML = `
+                            <div class="avatar">${name[0]}</div>
+                            <div style="flex:1; display:flex; flex-direction:column; justify-content:center;">
+                                <b style="color:#111; line-height:1.2;">${name}</b>
+                                <div style="font-size:12px;color:#667781; line-height:1.2;">${selectedServer}</div>
+                            </div>
+                            ${badgeHtml}
+                        `;
                         listDiv.appendChild(item);
-                    }
+                    });
                 }
             });
         }
@@ -242,14 +320,25 @@
             let minutes = date.getMinutes();
             const ampm = hours >= 12 ? 'م' : 'ص';
             hours = hours % 12;
-            hours = hours ? hours : 12; // الساعة 0 تصبح 12
+            hours = hours ? hours : 12; 
             minutes = minutes < 10 ? '0' + minutes : minutes;
             return hours + ':' + minutes + ' ' + ampm;
         }
 
         function openChat(server, student) {
+            // 🌟 إغلاق الاتصال بالشات القديم حتى لا تتداخل الرسائل إطلاقاً!
+            if (chatListenerRef) {
+                chatListenerRef.off();
+            }
+
             currentChatPath = `support_chats/${server}/${student}`;
             currentStudentName = student;
+            
+            // تحديث تصميم القائمة لتمييز الشات المفتوح
+            const allItems = document.querySelectorAll('.chat-item');
+            allItems.forEach(item => item.classList.remove('active-chat'));
+            fetchChats(); // استدعاء خفيف لتحديث شكل القائمة الجانبية فوراً
+
             document.getElementById('chat-header').style.display = 'flex';
             document.getElementById('input-area').style.display = 'flex';
             document.getElementById('active-name').innerText = student;
@@ -262,16 +351,26 @@
                 }
             });
 
-            // إخفاء القائمة الجانبية في الهاتف لدخول الشات
             toggleSidebar(false);
 
-            db.ref(currentChatPath).orderByChild('timestamp').on('value', snap => {
+            // 🌟 إنشاء اتصال جديد بالشات المحدد فقط
+            chatListenerRef = db.ref(currentChatPath).orderByChild('timestamp');
+            chatListenerRef.on('value', snap => {
                 const container = document.getElementById('messages-container');
                 container.innerHTML = '';
                 const msgs = snap.val();
+                
                 if (msgs) {
+                    let updates = {}; // 🌟 مصفوفة لتحديث حالة الرسائل إلى "مقروءة"
+
                     Object.keys(msgs).forEach(key => {
                         const m = msgs[key];
+                        
+                        // 🌟 إذا كانت الرسالة من الطالب وغير مقروءة، نجمعها لنقوم بتحديثها كـ "مقروءة"
+                        if (m.isFromAdmin === false && m.isRead === false) {
+                            updates[`${key}/isRead`] = true;
+                        }
+
                         const wrapper = document.createElement('div');
                         wrapper.className = "message-wrapper";
                         wrapper.style.flexDirection = m.isFromAdmin ? "row-reverse" : "row";
@@ -281,7 +380,6 @@
                         let content = m.text ? `<div style="margin-bottom: 2px;">${m.text}</div>` : '';
                         if (m.imageUrl) content += `<img src="${m.imageUrl}" class="msg-img" onclick="window.open('${m.imageUrl}')">`;
                         
-                        // استخدام دالة الوقت الجديدة (ص / م)
                         const formattedTime = formatTime12Hour(m.timestamp);
                         msgDiv.innerHTML = `${content}<div class="msg-time">${formattedTime}</div><div style="clear:both;"></div>`;
 
@@ -293,8 +391,13 @@
                         wrapper.appendChild(delBtn);
                         container.appendChild(wrapper);
                     });
-                    // النزول لأسفل الشات تلقائياً
+
                     container.scrollTop = container.scrollHeight;
+
+                    // 🌟 تحديث الداتا بيز بأننا قرأنا الرسائل (مما سيؤدي لاختفاء الدايرة الحمراء)
+                    if (Object.keys(updates).length > 0) {
+                        db.ref(currentChatPath).update(updates);
+                    }
                 }
             });
         }
@@ -325,7 +428,9 @@
                 document.getElementById('chat-header').style.display = 'none';
                 document.getElementById('input-area').style.display = 'none';
                 
-                // العودة للقائمة الجانبية بعد مسح الشات (للهاتف)
+                if (chatListenerRef) { chatListenerRef.off(); chatListenerRef = null; }
+                currentChatPath = "";
+                
                 toggleSidebar(true);
             }
         }
@@ -337,22 +442,21 @@
                 senderId: "ADMIN",
                 text: input.value.trim(),
                 timestamp: Date.now(),
-                isFromAdmin: true
+                isFromAdmin: true,
+                isRead: true // رسائل الأدمن تعتبر مقروءة افتراضياً حتى لا تؤثر على العداد
             });
             input.value = '';
-            // التركيز مجدداً على حقل الإدخال بعد الإرسال
             input.focus();
         }
 
         document.getElementById('message-input').addEventListener('keypress', e => { if(e.key==='Enter') sendReply(); });
 
-        // دالة التحكم في إظهار وإخفاء القائمة الجانبية (للهاتف)
         function toggleSidebar(show) {
             const sb = document.getElementById('sidebar');
             if (show) {
-                sb.classList.remove('hidden'); // يظهر القائمة
+                sb.classList.remove('hidden'); 
             } else {
-                sb.classList.add('hidden'); // يخفي القائمة ويعرض الشات
+                sb.classList.add('hidden'); 
             }
         }
     </script>
