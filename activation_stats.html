@@ -74,29 +74,7 @@
             border-radius: 12px; font-size: 12px; font-weight: bold;
             display: inline-block; margin: 2px; border: 1px solid #e1bee7;
         }
-        /* --- إضافة ستايل خاص للشهر الأول القابل للضغط --- */
-        .clickable-m1 {
-            cursor: pointer;
-            transition: 0.2s;
-            border: 1px solid var(--primary-color);
-            background-color: #ffebee;
-            color: #c62828;
-            border-color: #ef9a9a;
-        }
-        .clickable-m1:hover {
-            background-color: var(--primary-color);
-            color: white;
-            box-shadow: 0 2px 5px rgba(0,0,0,0.2);
-            transform: scale(1.05);
-            border-color: var(--primary-color);
-        }
         .no-date { color: #999; font-size: 12px; }
-
-        /* تأثير التحديث اللحظي للبيانات بدون ريفريش */
-        @keyframes highlightRow {
-            0% { background-color: #d4edda; }
-            100% { background-color: transparent; }
-        }
 
         /* --- إضافات الإيميل والباسورد --- */
         .toggle-btn { background: none; border: none; cursor: pointer; color: var(--primary-color); font-size: 18px; transition: 0.3s; padding: 5px 10px; border-radius: 5px; }
@@ -261,17 +239,6 @@
         </div>
     </div>
 
-    <div id="syncModal" class="modal">
-        <div class="modal-content">
-            <h3><i class="fas fa-sync"></i> تحديث صلاحية الشهر الأول</h3>
-            <p style="font-size: 14px; color: #555;">هل أنت متأكد من تمديد صلاحية الشهر الأول؟</p>
-            <div class="modal-buttons" style="margin-top: 15px;">
-                <button class="modal-btn btn-confirm" id="confirmSyncBtn" onclick="executeSync()">تأكيد التمديد</button>
-                <button class="modal-btn btn-cancel" onclick="closeSyncModal()">إلغاء</button>
-            </div>
-        </div>
-    </div>
-
     <script src="https://www.gstatic.com/firebasejs/9.6.10/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.6.10/firebase-auth-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.6.10/firebase-database-compat.js"></script>
@@ -290,22 +257,21 @@
         const db = firebase.database();
         const auth = firebase.auth();
 
+        // إعدادات حفظ الجلسة محلياً في المتصفح لعدم الحاجة لتسجيل الدخول في كل مرة
+        auth.setPersistence(firebase.auth.Auth.Persistence.LOCAL).catch(function(error) {
+            console.error("خطأ في إعداد حفظ الجلسة:", error);
+        });
+
         let allRowsData = [];
         let activeTeacher = localStorage.getItem('selectedTeacher');
         let isAdmin = false;
         const THIRTY_DAYS_MS = 30 * 24 * 60 * 60 * 1000;
 
-        // متغيرات للتحكم في النوافذ والتحديث اللحظي
+        // متغيرات للتحكم في النوافذ
         let pendingToggleUid = null;
         let pendingCheckboxElem = null;
         let pendingIsActive = null;
         let pendingActivationUid = null;
-        let pendingSyncData = null; 
-
-        // حفظ بيانات الشهور بشكل عام لاستخدامها في التحديث اللحظي
-        let globalMonthDetailsMap = {};
-        let globalTeacherM1Id = null;
-        let globalTeacherM2Id = null;
 
         auth.onAuthStateChanged(async user => {
             if (user) {
@@ -390,22 +356,13 @@
                 const accessObj = accessSnap.val() || {};
                 const codesObj = codesSnap.val() || {};
 
-                globalMonthDetailsMap = {};
-                globalTeacherM1Id = null;
-                globalTeacherM2Id = null;
-
+                let monthDetailsMap = {};
                 for (const [tName, tMonths] of Object.entries(monthsObj)) {
                     for (const [mId, mData] of Object.entries(tMonths)) {
-                        globalMonthDetailsMap[mId] = { 
+                        monthDetailsMap[mId] = { 
                             teacher: tName, 
                             name: mData.name 
                         };
-                        
-                        if (tName === activeTeacher) {
-                            const mName = (mData.name || "").toLowerCase();
-                            if (mName.includes("اول") || mName.includes("أول")) globalTeacherM1Id = mId;
-                            if (mName.includes("ثاني") || mName.includes("تاني")) globalTeacherM2Id = mId;
-                        }
                     }
                 }
 
@@ -423,40 +380,25 @@
                 const now = Date.now();
 
                 for (const [uid, userData] of Object.entries(usersObj)) {
+                    // هنا يتم تصفية الطلاب ليكونوا تابعين للمدرس النشط فقط
                     if (userData.year !== activeTeacher) {
                         continue; 
                     }
 
                     let displayDate = null;
                     let activeMonthsList = [];
-                    const userAccess = accessObj[uid] || {}; // حفظ الداتا الأصلية للطالب
+                    const userAccess = accessObj[uid];
 
-                    if (Object.keys(userAccess).length > 0) {
+                    if (userAccess) {
                         let latestActivation = 0;
-                        let m2Expiry = 0;
-                        if (globalTeacherM2Id && userAccess[globalTeacherM2Id]) {
-                            m2Expiry = userAccess[globalTeacherM2Id];
-                        }
-
                         for (const [monthId, expiryDate] of Object.entries(userAccess)) {
-                            const monthInfo = globalMonthDetailsMap[monthId];
+                            const monthInfo = monthDetailsMap[monthId];
                             
                             if (monthInfo && monthInfo.teacher === activeTeacher) {
                                 let remainingDays = Math.ceil((expiryDate - now) / (1000 * 60 * 60 * 24));
                                 if (remainingDays < 0) remainingDays = 0; 
                                 
-                                let badgeHtml = '';
-                                if (monthId === globalTeacherM1Id) {
-                                    if (globalTeacherM2Id && m2Expiry > now && remainingDays < 10 && expiryDate < m2Expiry) {
-                                        badgeHtml = `<span class="month-badge clickable-m1" title="اضغط لتمديد الشهر الأول ليتطابق مع الشهر الثاني" onclick="attemptSync('${uid}', '${globalTeacherM1Id}', ${m2Expiry})">${monthInfo.name} (${remainingDays} يوم)</span>`;
-                                    } else {
-                                        badgeHtml = `<span class="month-badge">${monthInfo.name} (${remainingDays} يوم)</span>`;
-                                    }
-                                } else {
-                                    badgeHtml = `<span class="month-badge">${monthInfo.name} (${remainingDays} يوم)</span>`;
-                                }
-
-                                activeMonthsList.push(badgeHtml);
+                                activeMonthsList.push(`${monthInfo.name} (${remainingDays} يوم)`);
 
                                 const activationDate = expiryDate - THIRTY_DAYS_MS;
                                 if (activationDate > latestActivation) {
@@ -476,7 +418,6 @@
                         code: studentCodes, 
                         calculatedJoinDate: displayDate,
                         activeMonths: activeMonthsList,
-                        rawAccess: userAccess, // مهم للتحديث اللحظي
                         email: userData.email || 'غير متوفر',
                         password: userData.password || 'غير متوفر',
                         isDisabled: userData.isDisabled || false 
@@ -513,7 +454,7 @@
                 
                 let monthsHtml = '';
                 if (row.activeMonths.length > 0) {
-                    monthsHtml = row.activeMonths.join('');
+                    monthsHtml = row.activeMonths.map(m => `<span class="month-badge">${m}</span>`).join('');
                 } else {
                     monthsHtml = '<span class="no-date">--</span>';
                 }
@@ -537,11 +478,11 @@
                 const statusText = !row.isDisabled ? 'نشط' : 'معطل';
 
                 html += `
-                    <tr id="row-${row.uid}">
+                    <tr>
                         <td>${count}</td>
                         <td style="font-weight:bold;">${row.fullName}</td>
                         <td style="font-family:monospace; font-weight:bold; line-height: 1.5;">${codesHtml}</td> 
-                        <td id="months-cell-${row.uid}">${monthsHtml}</td> 
+                        <td>${monthsHtml}</td> 
                         <td style="direction:ltr; text-align:right;">${row.phone}</td>
                         <td>${dateBadge}</td>
                         <td style="text-align: center;">
@@ -584,91 +525,6 @@
                 tableBody.innerHTML = html;
             }
         }
-
-        // --- تنفيذ تمديد صلاحية الشهر الأول بالتحديث اللحظي ---
-        window.attemptSync = function(uid, m1Id, m2Expiry) {
-            pendingSyncData = { uid, m1Id, m2Expiry };
-            document.getElementById('syncModal').style.display = 'flex';
-        };
-
-        window.closeSyncModal = function() {
-            document.getElementById('syncModal').style.display = 'none';
-            pendingSyncData = null;
-        };
-
-        window.executeSync = async function() {
-            if (!pendingSyncData) return;
-            const { uid, m1Id, m2Expiry } = pendingSyncData;
-            const btn = document.getElementById('confirmSyncBtn');
-            
-            btn.disabled = true;
-            btn.innerText = "جاري التحديث...";
-
-            try {
-                // رفع التعديل للفايربيز
-                await db.ref(`student_month_access/${uid}/${m1Id}`).set(m2Expiry);
-                
-                // --- التحديث اللحظي في الذاكرة والـ DOM (بدون ريفريش) ---
-                const userRow = allRowsData.find(u => u.uid === uid);
-                if (userRow && userRow.rawAccess) {
-                    userRow.rawAccess[m1Id] = m2Expiry; // تحديث الذاكرة الموضعية
-                    
-                    const now = Date.now();
-                    let newActiveMonthsList = [];
-                    let m2Exp = 0;
-                    
-                    if (globalTeacherM2Id && userRow.rawAccess[globalTeacherM2Id]) {
-                        m2Exp = userRow.rawAccess[globalTeacherM2Id];
-                    }
-
-                    // إعادة بناء الشارات الخاصة بالطالب
-                    for (const [monthId, expiryDate] of Object.entries(userRow.rawAccess)) {
-                        const monthInfo = globalMonthDetailsMap[monthId];
-                        if (monthInfo && monthInfo.teacher === activeTeacher) {
-                            let remainingDays = Math.ceil((expiryDate - now) / (1000 * 60 * 60 * 24));
-                            if (remainingDays < 0) remainingDays = 0; 
-                            
-                            let badgeHtml = '';
-                            if (monthId === globalTeacherM1Id) {
-                                // بعد التزامن، m1 هيكون قد m2، فالشرط ده هيكون False وهيرسم شارة عادية
-                                if (globalTeacherM2Id && m2Exp > now && remainingDays < 10 && expiryDate < m2Exp) {
-                                    badgeHtml = `<span class="month-badge clickable-m1" onclick="attemptSync('${uid}', '${globalTeacherM1Id}', ${m2Exp})">${monthInfo.name} (${remainingDays} يوم)</span>`;
-                                } else {
-                                    badgeHtml = `<span class="month-badge">${monthInfo.name} (${remainingDays} يوم)</span>`;
-                                }
-                            } else {
-                                badgeHtml = `<span class="month-badge">${monthInfo.name} (${remainingDays} يوم)</span>`;
-                            }
-                            newActiveMonthsList.push(badgeHtml);
-                        }
-                    }
-                    userRow.activeMonths = newActiveMonthsList; // حفظ التغيير للبحث
-
-                    // تحديث الجدول المعروض أمام المستخدم مباشرة
-                    const monthsCell = document.getElementById(`months-cell-${uid}`);
-                    if (monthsCell) {
-                        monthsCell.innerHTML = newActiveMonthsList.join('');
-                    }
-
-                    // إضافة وميض أخضر للتأكيد البصري
-                    const rowTr = document.getElementById(`row-${uid}`);
-                    if (rowTr) {
-                        rowTr.style.animation = 'none'; // إعادة ضبط الأنيميشن
-                        rowTr.offsetHeight; // تفعيل التدفق (Reflow)
-                        rowTr.style.animation = 'highlightRow 2s ease';
-                    }
-                }
-
-                alert("تم تحديث صلاحية الشهر الأول بنجاح!");
-                closeSyncModal();
-            } catch (error) {
-                console.error(error);
-                alert("حدث خطأ أثناء محاولة تحديث الصلاحية!");
-            } finally {
-                btn.disabled = false;
-                btn.innerText = "تأكيد التمديد";
-            }
-        };
 
         // --- دوال التعطيل والتفعيل بالباسورد ---
         window.initiateToggle = function(uid, checkboxElem) {
@@ -774,6 +630,8 @@
 
                 const codeData = codeSnap.val();
 
+                // 🔴 الحماية الجديدة: التحقق من تطابق المدرس! 🔴
+                // لا يمكن تفعيل كود لمدرس معين لطالب موجود في صفحة مدرس آخر
                 if (codeData.server !== activeTeacher) {
                     alert(`❌ خطأ: هذا الكود مخصص لـ (${codeData.server || 'غير معروف'}) ولا يمكن استخدامه لطالب في (${activeTeacher})!`);
                     return;
@@ -790,13 +648,16 @@
                     return;
                 }
 
+                // حساب تاريخ الانتهاء (بعد 30 يوم من الآن)
                 const expiryTimestamp = Date.now() + THIRTY_DAYS_MS;
                 const updates = {};
                 
+                // حرق الكود وربطه بالطالب
                 updates[`codes/${code}/isUsed`] = true;
                 updates[`codes/${code}/usedBy`] = uid;
                 updates[`users/${uid}/ncode`] = code; 
 
+                // إضافة الشهور للطالب
                 monthsToActivate.forEach(monthId => {
                     updates[`student_month_access/${uid}/${monthId}`] = expiryTimestamp;
                 });
@@ -805,7 +666,7 @@
                 
                 alert("تم تفعيل الكود بنجاح!");
                 closeActivationModal();
-                initPage(); 
+                initPage(); // إعادة تحميل الجدول ليظهر الكود والشهور الجديدة
 
             } catch (error) {
                 console.error(error);
