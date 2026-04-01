@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>إضافة محاضرة برابط خارجي - لوحة التحكم</title>
+    <title>إضافة محاضرة برابط لوحة التحكم</title>
     <link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@400;500;700;800&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <style>
@@ -108,7 +108,7 @@
     <div id="page-content" style="display: none; width: 100%; display:flex; justify-content:center;">
         <div class="container">
             <div class="appbar">
-                <h1>إدارة المحاضرات (روابط خارجية)</h1>
+                <h1>إدارة المحاضرات (روابط )</h1>
                 <p>إضافة وحذف المحاضرات من اليوتيوب أو روابط مباشرة</p>
             </div>
             
@@ -469,7 +469,7 @@
                         await logoStorageRef.delete().catch(err => console.log('Logo skipped or deleted'));
                     }
 
-                    // لا نمسح الـ videoPath لأنه في هذه الصفحة عبارة عن رابط يوتيوب أو خارجي وليس ملفاً في الستوريدج
+                    // لا نمسح الـ videoPath لأنه في هذه الصفحة عبارة عن رابط يوتيوب وليس ملفاً في الستوريدج
 
                     const li = event.target.closest('li');
                     if(li) li.remove();
