@@ -3,14 +3,14 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>إدارة المحاضرات - لوحة التحكم</title>
+    <title>إضافة محاضرة برابط خارجي - لوحة التحكم</title>
     <link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@400;500;700;800&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <style>
         :root {
-            --primary-color: #4F46E5;
-            --primary-hover: #4338ca;
-            --secondary-color: #818cf8;
+            --primary-color: #06467A;
+            --primary-hover: #043259;
+            --secondary-color: #A29BFE;
             --background-color: #F3F4F6;
             --surface-color: #FFFFFF;
             --text-primary: #1F2937;
@@ -20,8 +20,7 @@
             --danger-color: #EF4444;
             --danger-hover: #DC2626;
             --shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
-            --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
-            --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+            --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
             --radius: 12px;
             --transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
         }
@@ -29,464 +28,69 @@
         [data-theme="dark"] {
             --primary-color: #6366f1;
             --primary-hover: #818cf8;
-            --secondary-color: #4f46e5;
             --background-color: #111827;
             --surface-color: #1F2937;
             --text-primary: #F9FAFB;
             --text-secondary: #D1D5DB;
             --border-color: #374151;
-            --shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.3);
-            --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.4);
         }
 
-        * {
-            box-sizing: border-box;
-            outline: none;
-        }
+        * { box-sizing: border-box; outline: none; }
+        body { font-family: 'Tajawal', sans-serif; background-color: var(--background-color); color: var(--text-primary); margin: 0; padding: 0; min-height: 100vh; display: flex; flex-direction: column; align-items: center; transition: background-color 0.3s ease, color 0.3s ease; }
 
-        body {
-            font-family: 'Tajawal', sans-serif;
-            background-color: var(--background-color);
-            color: var(--text-primary);
-            margin: 0;
-            padding: 0;
-            min-height: 100vh;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            transition: background-color 0.3s ease, color 0.3s ease;
-        }
+        .top-bar { width: 100%; max-width: 800px; display: flex; justify-content: space-between; align-items: center; padding: 20px; margin-bottom: 10px; }
+        .back-btn-top { text-decoration: none; color: var(--text-secondary); font-weight: 500; display: flex; align-items: center; gap: 8px; transition: var(--transition); padding: 8px 16px; border-radius: var(--radius); background: var(--surface-color); box-shadow: var(--shadow-sm); }
+        .back-btn-top:hover { color: var(--primary-color); transform: translateX(-5px); }
 
-        /* Top Bar */
-        .top-bar {
-            width: 100%;
-            max-width: 800px;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            padding: 20px;
-            margin-bottom: 10px;
-        }
+        .theme-toggle { background: var(--surface-color); border: 1px solid var(--border-color); color: var(--text-primary); padding: 10px; border-radius: 50%; cursor: pointer; box-shadow: var(--shadow-sm); transition: var(--transition); width: 40px; height: 40px; display: flex; align-items: center; justify-content: center; }
+        .theme-toggle:hover { background: var(--border-color); }
 
-        .back-btn-top {
-            text-decoration: none;
-            color: var(--text-secondary);
-            font-weight: 500;
-            display: flex;
-            align-items: center;
-            gap: 8px;
-            transition: var(--transition);
-            padding: 8px 16px;
-            border-radius: var(--radius);
-            background: var(--surface-color);
-            box-shadow: var(--shadow-sm);
-        }
+        .container { width: 95%; max-width: 800px; background-color: var(--surface-color); border-radius: var(--radius); box-shadow: var(--shadow-lg); padding: 0; margin-bottom: 40px; overflow: hidden; border: 1px solid var(--border-color); }
+        .appbar { background: linear-gradient(135deg, var(--primary-color), var(--secondary-color)); color: white; padding: 30px 20px; text-align: center; }
+        .appbar h1 { margin: 0; font-size: 28px; font-weight: 800; }
+        .appbar p { margin: 5px 0 0; opacity: 0.9; font-size: 14px; }
+        .content-body { padding: 30px; }
+        h3 { color: var(--text-primary); margin-bottom: 20px; font-size: 20px; border-right: 4px solid var(--primary-color); padding-right: 12px; display: flex; align-items: center; gap: 10px; }
 
-        .back-btn-top:hover {
-            color: var(--primary-color);
-            transform: translateX(-5px);
-        }
+        .form-grid { display: grid; grid-template-columns: 1fr; gap: 20px; }
+        @media (min-width: 600px) { .form-grid { grid-template-columns: 1fr 1fr; } .full-width { grid-column: span 2; } }
 
-        /* Dark Mode Toggle */
-        .theme-toggle {
-            background: var(--surface-color);
-            border: 1px solid var(--border-color);
-            color: var(--text-primary);
-            padding: 10px;
-            border-radius: 50%;
-            cursor: pointer;
-            box-shadow: var(--shadow-sm);
-            transition: var(--transition);
-            width: 40px;
-            height: 40px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-        }
+        .input-group label { display: block; margin-bottom: 8px; font-weight: 500; color: var(--text-primary); font-size: 14px; }
+        .input-group input, .input-group select { width: 100%; padding: 14px; border: 2px solid var(--border-color); border-radius: var(--radius); background-color: var(--background-color); color: var(--text-primary); font-size: 15px; font-family: inherit; transition: var(--transition); }
+        .input-group input:focus, .input-group select:focus { border-color: var(--primary-color); box-shadow: 0 0 0 4px rgba(79, 70, 229, 0.1); background-color: var(--surface-color); }
 
-        .theme-toggle:hover {
-            background: var(--border-color);
-        }
+        .file-upload-wrapper { position: relative; width: 100%; height: 120px; border: 2px dashed var(--border-color); border-radius: var(--radius); display: flex; flex-direction: column; align-items: center; justify-content: center; cursor: pointer; transition: var(--transition); background-color: rgba(0,0,0,0.02); }
+        .file-upload-wrapper:hover { border-color: var(--primary-color); background-color: rgba(79, 70, 229, 0.05); }
+        .file-upload-wrapper input[type="file"] { position: absolute; width: 100%; height: 100%; opacity: 0; cursor: pointer; }
+        .file-icon { font-size: 32px; color: var(--text-secondary); margin-bottom: 10px; }
+        .file-label { color: var(--primary-color); font-weight: 600; font-size: 14px; }
+        .file-name { font-size: 12px; color: var(--text-secondary); margin-top: 5px; max-width: 90%; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 
-        /* Container */
-        .container {
-            width: 95%;
-            max-width: 800px;
-            background-color: var(--surface-color);
-            border-radius: var(--radius);
-            box-shadow: var(--shadow-lg);
-            padding: 0;
-            margin-bottom: 40px;
-            overflow: hidden;
-            border: 1px solid var(--border-color);
-        }
-
-        .appbar {
-            background: linear-gradient(135deg, var(--primary-color), var(--secondary-color));
-            color: white;
-            padding: 30px 20px;
-            text-align: center;
-            position: relative;
-        }
-
-        .appbar h1 {
-            margin: 0;
-            font-size: 28px;
-            font-weight: 800;
-            letter-spacing: -0.5px;
-        }
-        
-        .appbar p {
-            margin: 5px 0 0;
-            opacity: 0.9;
-            font-size: 14px;
-        }
-
-        .content-body {
-            padding: 30px;
-        }
-
-        h3 {
-            color: var(--text-primary);
-            margin-bottom: 20px;
-            font-size: 20px;
-            border-right: 4px solid var(--primary-color);
-            padding-right: 12px;
-            display: flex;
-            align-items: center;
-            gap: 10px;
-        }
-
-        .form-grid {
-            display: grid;
-            grid-template-columns: 1fr;
-            gap: 20px;
-        }
-
-        @media (min-width: 600px) {
-            .form-grid {
-                grid-template-columns: 1fr 1fr;
-            }
-            .full-width {
-                grid-column: span 2;
-            }
-        }
-
-        .input-group label {
-            display: block;
-            margin-bottom: 8px;
-            font-weight: 500;
-            color: var(--text-primary);
-            font-size: 14px;
-        }
-
-        .input-group input,
-        .input-group select {
-            width: 100%;
-            padding: 14px;
-            border: 2px solid var(--border-color);
-            border-radius: var(--radius);
-            background-color: var(--background-color);
-            color: var(--text-primary);
-            font-size: 15px;
-            font-family: inherit;
-            transition: var(--transition);
-        }
-
-        .input-group input:focus,
-        .input-group select:focus {
-            border-color: var(--primary-color);
-            box-shadow: 0 0 0 4px rgba(79, 70, 229, 0.1);
-            background-color: var(--surface-color);
-        }
-
-        /* File Upload */
-        .file-upload-wrapper {
-            position: relative;
-            width: 100%;
-            height: 120px;
-            border: 2px dashed var(--border-color);
-            border-radius: var(--radius);
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
-            cursor: pointer;
-            transition: var(--transition);
-            background-color: rgba(0,0,0,0.02);
-        }
-
-        .file-upload-wrapper:hover {
-            border-color: var(--primary-color);
-            background-color: rgba(79, 70, 229, 0.05);
-        }
-
-        .file-upload-wrapper input[type="file"] {
-            position: absolute;
-            width: 100%;
-            height: 100%;
-            opacity: 0;
-            cursor: pointer;
-        }
-
-        .file-icon {
-            font-size: 32px;
-            color: var(--text-secondary);
-            margin-bottom: 10px;
-        }
-
-        .file-label {
-            color: var(--primary-color);
-            font-weight: 600;
-            font-size: 14px;
-        }
-        
-        .file-name {
-            font-size: 12px;
-            color: var(--text-secondary);
-            margin-top: 5px;
-            max-width: 90%;
-            white-space: nowrap;
-            overflow: hidden;
-            text-overflow: ellipsis;
-        }
-
-        /* Buttons */
-        .button {
-            width: 100%;
-            padding: 16px;
-            border: none;
-            border-radius: var(--radius);
-            font-size: 16px;
-            font-weight: 700;
-            color: white;
-            cursor: pointer;
-            transition: var(--transition);
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            gap: 10px;
-            margin-top: 10px;
-            position: relative;
-            overflow: hidden;
-        }
-        
-        .button::after {
-            content: '';
-            position: absolute;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background: rgba(255,255,255,0.1);
-            opacity: 0;
-            transition: var(--transition);
-        }
-        
-        .button:hover::after {
-            opacity: 1;
-        }
-
-        .upload-btn {
-            background-color: var(--success-color);
-            box-shadow: 0 4px 15px rgba(16, 185, 129, 0.3);
-        }
+        .button { width: 100%; padding: 16px; border: none; border-radius: var(--radius); font-size: 16px; font-weight: 700; color: white; cursor: pointer; transition: var(--transition); display: flex; align-items: center; justify-content: center; gap: 10px; margin-top: 10px; position: relative; overflow: hidden; }
+        .button::after { content: ''; position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: rgba(255,255,255,0.1); opacity: 0; transition: var(--transition); }
+        .button:hover::after { opacity: 1; }
+        .upload-btn { background-color: var(--success-color); box-shadow: 0 4px 15px rgba(16, 185, 129, 0.3); }
         .upload-btn:hover { background-color: #059669; transform: translateY(-2px); }
-        .upload-btn:active { transform: translateY(0); }
-
-        .delete-btn {
-            background-color: var(--danger-color);
-            box-shadow: 0 4px 15px rgba(239, 68, 68, 0.3);
-        }
+        .delete-btn { background-color: var(--danger-color); box-shadow: 0 4px 15px rgba(239, 68, 68, 0.3); }
         .delete-btn:hover { background-color: var(--danger-hover); transform: translateY(-2px); }
 
-        .divider {
-            height: 1px;
-            background-color: var(--border-color);
-            margin: 40px 0;
-        }
+        .divider { height: 1px; background-color: var(--border-color); margin: 40px 0; }
 
-        /* Overlay */
-        .progress-overlay {
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background: rgba(0, 0, 0, 0.9);
-            z-index: 9999;
-            display: none;
-            flex-direction: column;
-            justify-content: center;
-            align-items: center;
-            backdrop-filter: blur(10px);
-        }
-
-        .progress-card {
-            background: var(--surface-color);
-            padding: 40px;
-            border-radius: 20px;
-            width: 90%;
-            max-width: 450px;
-            text-align: center;
-            box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
-        }
-
-        .circular-chart {
-            display: block;
-            margin: 0 auto 20px auto;
-            max-width: 120px;
-            max-height: 120px;
-        }
-        .circle-bg {
-            fill: none;
-            stroke: var(--border-color);
-            stroke-width: 3.8;
-        }
-        .circle {
-            fill: none;
-            stroke-width: 2.8;
-            stroke-linecap: round;
-            transition: stroke-dasharray 0.3s ease;
-            stroke: var(--primary-color);
-        }
-        .percentage {
-            fill: var(--text-primary);
-            font-family: 'Tajawal', sans-serif;
-            font-weight: bold;
-            font-size: 0.5em;
-            text-anchor: middle;
-        }
-
-        .progress-status {
-            color: var(--text-secondary);
-            font-size: 16px;
-            margin-top: 15px;
-            font-weight: 500;
-        }
-
-        /* Modal */
-        .modal {
-            display: none;
-            position: fixed;
-            z-index: 5000;
-            left: 0;
-            top: 0;
-            width: 100%;
-            height: 100%;
-            overflow: auto;
-            background-color: rgba(0,0,0,0.6);
-            backdrop-filter: blur(4px);
-        }
-
-        .modal-content {
-            background-color: var(--surface-color);
-            margin: 10% auto;
-            padding: 0;
-            border: 1px solid var(--border-color);
-            width: 90%;
-            max-width: 600px;
-            border-radius: var(--radius);
-            box-shadow: var(--shadow-lg);
-            animation: slideIn 0.3s ease-out;
-        }
-
-        @keyframes slideIn {
-            from { transform: translateY(-50px); opacity: 0; }
-            to { transform: translateY(0); opacity: 1; }
-        }
-
-        .modal-header {
-            padding: 20px;
-            border-bottom: 1px solid var(--border-color);
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            background-color: var(--background-color);
-            border-radius: var(--radius) var(--radius) 0 0;
-        }
-
-        .modal-header h2 {
-            margin: 0;
-            font-size: 18px;
-            color: var(--text-primary);
-        }
-
-        .close {
-            color: var(--text-secondary);
-            font-size: 24px;
-            font-weight: bold;
-            cursor: pointer;
-            transition: var(--transition);
-        }
-
+        .modal { display: none; position: fixed; z-index: 5000; left: 0; top: 0; width: 100%; height: 100%; overflow: auto; background-color: rgba(0,0,0,0.6); backdrop-filter: blur(4px); }
+        .modal-content { background-color: var(--surface-color); margin: 10% auto; padding: 0; border: 1px solid var(--border-color); width: 90%; max-width: 600px; border-radius: var(--radius); box-shadow: var(--shadow-lg); animation: slideIn 0.3s ease-out; }
+        @keyframes slideIn { from { transform: translateY(-50px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
+        .modal-header { padding: 20px; border-bottom: 1px solid var(--border-color); display: flex; justify-content: space-between; align-items: center; background-color: var(--background-color); border-radius: var(--radius) var(--radius) 0 0; }
+        .modal-header h2 { margin: 0; font-size: 18px; color: var(--text-primary); }
+        .close { color: var(--text-secondary); font-size: 24px; font-weight: bold; cursor: pointer; transition: var(--transition); }
         .close:hover { color: var(--danger-color); }
-
-        .modal-body {
-            padding: 20px;
-            max-height: 60vh;
-            overflow-y: auto;
-        }
-
-        .modal-body ul {
-            list-style: none;
-            padding: 0;
-            margin: 0;
-        }
-
-        .delete-list-item {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            padding: 15px;
-            border-bottom: 1px solid var(--border-color);
-            transition: var(--transition);
-        }
-        
-        .delete-list-item:hover {
-            background-color: var(--background-color);
-        }
-
-        .delete-list-item:last-child {
-            border-bottom: none;
-        }
-        
-        .delete-list-item span {
-            font-weight: 500;
-            color: var(--text-primary);
-        }
-
-        .btn-sm-danger {
-            background-color: rgba(239, 68, 68, 0.1);
-            color: var(--danger-color);
-            border: none;
-            padding: 8px 16px;
-            border-radius: 6px;
-            cursor: pointer;
-            font-weight: 600;
-            transition: var(--transition);
-        }
-
-        .btn-sm-danger:hover {
-            background-color: var(--danger-color);
-            color: white;
-        }
-
-        /* Scrollbar */
-        ::-webkit-scrollbar {
-            width: 8px;
-        }
-        ::-webkit-scrollbar-track {
-            background: var(--background-color);
-        }
-        ::-webkit-scrollbar-thumb {
-            background: var(--border-color);
-            border-radius: 4px;
-        }
-        ::-webkit-scrollbar-thumb:hover {
-            background: var(--text-secondary);
-        }
-
+        .modal-body { padding: 20px; max-height: 60vh; overflow-y: auto; }
+        .modal-body ul { list-style: none; padding: 0; margin: 0; }
+        .delete-list-item { display: flex; justify-content: space-between; align-items: center; padding: 15px; border-bottom: 1px solid var(--border-color); transition: var(--transition); }
+        .delete-list-item:hover { background-color: var(--background-color); }
+        .delete-list-item:last-child { border-bottom: none; }
+        .delete-list-item span { font-weight: 500; color: var(--text-primary); }
+        .btn-sm-danger { background-color: rgba(239, 68, 68, 0.1); color: var(--danger-color); border: none; padding: 8px 16px; border-radius: 6px; cursor: pointer; font-weight: 600; transition: var(--transition); }
+        .btn-sm-danger:hover { background-color: var(--danger-color); color: white; }
     </style>
 </head>
 <body>
@@ -501,27 +105,15 @@
         </button>
     </div>
 
-    <div id="uploadOverlay" class="progress-overlay">
-        <div class="progress-card">
-            <svg viewBox="0 0 36 36" class="circular-chart">
-                <path class="circle-bg" d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" />
-                <path id="circlePath" class="circle" stroke-dasharray="0, 100" d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" />
-                <text x="18" y="20.35" class="percentage" id="overlayPercentage">0%</text>
-            </svg>
-            <h3 style="justify-content:center; border:none; margin:0; font-size: 1.2rem;">جاري الرفع</h3>
-            <div class="progress-status" id="overlayStatusText">يرجى الانتظار...</div>
-        </div>
-    </div>
-
     <div id="page-content" style="display: none; width: 100%; display:flex; justify-content:center;">
         <div class="container">
             <div class="appbar">
-                <h1>إدارة المحاضرات</h1>
-                <p>إضافة وحذف وتنظيم المحاضرات الدراسية</p>
+                <h1>إدارة المحاضرات (روابط خارجية)</h1>
+                <p>إضافة وحذف المحاضرات من اليوتيوب أو روابط مباشرة</p>
             </div>
             
             <div class="content-body">
-                <h3><i class="fas fa-cloud-upload-alt"></i> إضافة محاضرة جديدة</h3>
+                <h3><i class="fas fa-link"></i> إضافة محاضرة برابط</h3>
                 
                 <div class="form-grid">
                     <div class="input-group">
@@ -531,7 +123,7 @@
                     
                     <div class="input-group">
                         <label for="title">عنوان المحاضرة</label>
-                        <input type="text" id="title" placeholder="مثال: مقدمة في الفيزياء">
+                        <input type="text" id="title" placeholder="مثال: الباب الأول - الدرس الأول">
                     </div>
                     
                     <div class="input-group">
@@ -542,22 +134,18 @@
                     <div class="input-group">
                         <label for="month">الشهر الدراسي</label>
                         <select id="month">
-                            <option value="_uncategorized_" selected>غير مصنف (رفع مباشر)</option>
+                            <option value="_uncategorized_" selected>غير مصنف</option>
                         </select>
                     </div>
 
                     <div class="input-group full-width">
-                        <label>ملف الفيديو</label>
-                        <div class="file-upload-wrapper" onclick="document.getElementById('videoFile').click()">
-                            <input type="file" id="videoFile" accept="video/*">
-                            <i class="fas fa-video file-icon"></i>
-                            <span class="file-label">اضغط لاختيار فيديو</span>
-                            <span id="videoFileName" class="file-name">لم يتم اختيار ملف</span>
-                        </div>
+                        <label>رابط الفيديو (YouTube)</label>
+                        <input type="url" id="videoLink" placeholder="مثال: https://youtu.be/...">
+                        <p style="font-size: 12px; color: var(--text-secondary); margin-top: 5px;">يجب إدخال رابط يوتيوب صالح</p>
                     </div>
 
                     <div class="input-group full-width">
-                        <label>شعار المحاضرة (اختياري)</label>
+                        <label>شعار المحاضرة (اختياري - سيتم رفعه للسيرفر)</label>
                         <div class="file-upload-wrapper" style="height: 100px;" onclick="document.getElementById('logoFile').click()">
                             <input type="file" id="logoFile" accept="image/*">
                             <i class="fas fa-image file-icon" style="font-size: 24px;"></i>
@@ -568,8 +156,8 @@
                 </div>
 
                 <button id="uploadButton" class="button upload-btn">
-                    <i class="fas fa-upload"></i>
-                    <span id="uploadText">بدء الرفع</span>
+                    <i class="fas fa-save"></i>
+                    <span id="uploadText">حفظ المحاضرة</span>
                 </button>
                 
                 <div class="divider"></div>
@@ -614,17 +202,13 @@
     <script src="https://www.gstatic.com/firebasejs/10.12.3/firebase-storage-compat.js"></script>
 
     <script>
-        // Dark Mode Logic
         const themeToggle = document.getElementById('themeToggle');
         const icon = themeToggle.querySelector('i');
-        
-        // Check local storage
         if(localStorage.getItem('theme') === 'dark') {
             document.documentElement.setAttribute('data-theme', 'dark');
             icon.classList.remove('fa-moon');
             icon.classList.add('fa-sun');
         }
-
         themeToggle.addEventListener('click', () => {
             if (document.documentElement.getAttribute('data-theme') === 'dark') {
                 document.documentElement.removeAttribute('data-theme');
@@ -639,7 +223,6 @@
             }
         });
 
-        // Firebase Configuration
         const firebaseConfig = {
             apiKey: 'AIzaSyCdqYrVFspJ4rZwidfaPtc9PYpNlQQm09k',
             appId: '1:284879336757:web:1f42836c2382d11b73087c',
@@ -679,23 +262,15 @@
                         auth.signOut();
                         window.location.href = 'index.html';
                     }
-                } catch(e) {
-                    console.error(e);
-                }
-            } else {
-                window.location.href = 'index.html';
-            }
+                } catch(e) { console.error(e); }
+            } else { window.location.href = 'index.html'; }
         });
 
         function initializeAppLogic() {
             function getDbPath(year, month = '_uncategorized_', lectureId = null) {
                 let path = `lectures/${year}`;
-                if (month && month !== '_uncategorized_') {
-                    path += `/${month}`;
-                }
-                if (lectureId) {
-                    path += `/${lectureId}`;
-                }
+                if (month && month !== '_uncategorized_') path += `/${month}`;
+                if (lectureId) path += `/${lectureId}`;
                 return path;
             }
             
@@ -714,28 +289,19 @@
                             selectElement.appendChild(option);
                         });
                     }
-                } catch (error) {
-                    console.error("Error loading months:", error);
-                }
+                } catch (error) { console.error("Error loading months:", error); }
             }
 
             const titleInput = document.getElementById('title');
             const lectureNumberInput = document.getElementById('lectureNumber');
             const yearSelect = document.getElementById('year');
             const monthSelect = document.getElementById('month');
-            const videoFileInput = document.getElementById('videoFile');
+            const videoLinkInput = document.getElementById('videoLink');
             const logoFileInput = document.getElementById('logoFile');
-            const videoFileNameSpan = document.getElementById('videoFileName');
             const logoFileNameSpan = document.getElementById('logoFileName');
             const uploadButton = document.getElementById('uploadButton');
-            
-            // Overlay Elements
-            const uploadOverlay = document.getElementById('uploadOverlay');
-            const circlePath = document.getElementById('circlePath');
-            const overlayPercentage = document.getElementById('overlayPercentage');
-            const overlayStatusText = document.getElementById('overlayStatusText');
-
             const uploadText = document.getElementById('uploadText');
+
             const deleteYearSelect = document.getElementById('deleteYear');
             const deleteMonthSelect = document.getElementById('deleteMonth'); 
             const showDeleteButton = document.getElementById('showDeleteButton');
@@ -743,19 +309,16 @@
             const closeModal = document.querySelector('#deleteModal .close');
             const lecturesList = document.getElementById('lecturesList');
 
-            // Populate Selects
             yearSelect.innerHTML = '';
             deleteYearSelect.innerHTML = '';
 
             teacherList.forEach(teacherName => {
                 const opt1 = document.createElement('option');
-                opt1.value = teacherName;
-                opt1.textContent = teacherName;
+                opt1.value = teacherName; opt1.textContent = teacherName;
                 yearSelect.appendChild(opt1);
 
                 const opt2 = document.createElement('option');
-                opt2.value = teacherName;
-                opt2.textContent = teacherName;
+                opt2.value = teacherName; opt2.textContent = teacherName;
                 deleteYearSelect.appendChild(opt2);
             });
 
@@ -771,129 +334,79 @@
             yearSelect.addEventListener('change', () => loadMonthsForSelect(monthSelect, yearSelect.value));
             deleteYearSelect.addEventListener('change', () => loadMonthsForSelect(deleteMonthSelect, deleteYearSelect.value));
             
-            videoFileInput.addEventListener('change', (event) => {
-                const fileName = event.target.files[0] ? event.target.files[0].name : 'لم يتم اختيار ملف';
-                videoFileNameSpan.textContent = fileName;
-                // Add active class style logic if needed
-            });
             logoFileInput.addEventListener('change', (event) => {
                 const fileName = event.target.files[0] ? event.target.files[0].name : 'لم يتم اختيار ملف';
                 logoFileNameSpan.textContent = fileName;
             });
 
-            // --- Upload Logic with Size Check ---
             uploadButton.addEventListener('click', async () => {
                 const title = titleInput.value.trim();
                 const lectureNumber = lectureNumberInput.value.trim();
                 const selectedYear = yearSelect.value;
                 const selectedMonth = monthSelect.value;
-                const videoFile = videoFileInput.files[0];
+                const videoLink = videoLinkInput.value.trim();
                 const logoFile = logoFileInput.files[0];
 
-                if (!title || !lectureNumber || !videoFile) {
-                    alert('يرجى إدخال جميع البيانات المطلوبة واختيار ملف الفيديو');
+                if (!title || !lectureNumber || !videoLink) {
+                    alert('يرجى إدخال جميع البيانات المطلوبة');
                     return;
                 }
 
-                // *** CHECKS SIZE: 750MB = 750 * 1024 * 1024 bytes ***
-                const MAX_SIZE_MB = 800;
-                const MAX_SIZE_BYTES = MAX_SIZE_MB * 1024 * 1024;
-
-                if (videoFile.size > MAX_SIZE_BYTES) {
-                    alert(`عذراً، حجم الفيديو (${(videoFile.size / (1024*1024)).toFixed(2)} MB) 800 MB أكبر من الحد المسموح (${MAX_SIZE_MB} MB).`);
+                // شرط التحقق من أن الرابط يخص يوتيوب فقط
+                const youtubeRegex = /^(https?\:\/\/)?(www\.|m\.)?(youtube\.com|youtu\.be)\/.+$/;
+                if (!youtubeRegex.test(videoLink)) {
+                    alert('رابط غير صالح');
                     return;
                 }
 
-                uploadText.textContent = 'جاري الرفع...';
+                uploadText.textContent = 'جاري الحفظ...';
                 uploadButton.disabled = true;
-                
-                // Show Overlay
-                uploadOverlay.style.display = 'flex';
-                circlePath.setAttribute('stroke-dasharray', '0, 100');
-                overlayPercentage.textContent = '0%';
-                overlayStatusText.textContent = 'جاري التهيئة...';
 
                 try {
                     const lectureId = Date.now().toString();
                     const baseName = `${lectureNumber}_${title.replace(/\s/g, '_')}`;
+                    let logoPath = '';
 
-                    const videoStorageRef = storage.ref(`lectures_data/${selectedYear}/${baseName}_${lectureId}.mp4`);
-                    const videoUploadTask = videoStorageRef.put(videoFile); 
+                    // 🌟 الحفظ بنفس الطريقة المتوافقة مع الصفحة الأولى 🌟
+                    if (logoFile) {
+                        const logoStorageRef = storage.ref(`lectures_data/${selectedYear}/logos/${baseName}_${lectureId}.jpg`);
+                        const logoUploadTask = logoStorageRef.put(logoFile);
+                        await logoUploadTask;
+                        logoPath = logoUploadTask.snapshot.ref.fullPath; // حفظ المسار في الستوريدج
+                    }
 
-                    videoUploadTask.on('state_changed',
-                        (snapshot) => {
-                            const progress = (snapshot.bytesTransferred / snapshot.totalBytes) * 100;
-                            const progressRounded = Math.round(progress);
-                            
-                            // Update Circular Progress
-                            circlePath.setAttribute('stroke-dasharray', `${progressRounded}, 100`);
-                            overlayPercentage.textContent = `${progressRounded}%`;
-                            overlayStatusText.textContent = `جاري رفع الفيديو... (${progressRounded}%)`;
-                        },
-                        (error) => {
-                            console.error('Video upload failed', error);
-                            alert(`حدث خطأ أثناء رفع الفيديو: ${error.message}`);
-                            resetUploadUI();
-                        },
-                        async () => {
-                            overlayStatusText.textContent = 'جاري رفع الشعار وحفظ البيانات...';
-                            try {
-                                const videoPath = videoUploadTask.snapshot.ref.fullPath;
-                                let logoPath = ''; 
-                                
-                                if (logoFile) {
-                                    const logoStorageRef = storage.ref(`lectures_data/${selectedYear}/logos/${baseName}_${lectureId}.jpg`);
-                                    const logoUploadTask = logoStorageRef.put(logoFile);
-                                    await logoUploadTask;
-                                    logoPath = logoUploadTask.snapshot.ref.fullPath;
-                                }
+                    const dbPath = getDbPath(selectedYear, selectedMonth, lectureId);
 
-                                const dbPath = getDbPath(selectedYear, selectedMonth, lectureId);
+                    await database.ref(dbPath).set({
+                        id: lectureId,
+                        title: title,
+                        lectureNumber: lectureNumber,
+                        year: selectedYear,
+                        month: selectedMonth, 
+                        videoPath: videoLink, // هنا نمرر الرابط بدلاً من المسار
+                        logoPath: logoPath,  
+                        timestamp: Date.now()
+                    });
 
-                                await database.ref(dbPath).set({
-                                    id: lectureId,
-                                    title: title,
-                                    lectureNumber: lectureNumber,
-                                    year: selectedYear,
-                                    month: selectedMonth, 
-                                    videoPath: videoPath,
-                                    logoPath: logoPath,  
-                                    timestamp: Date.now()
-                                });
+                    alert('تمت إضافة المحاضرة بنجاح!');
+                    
+                    titleInput.value = '';
+                    lectureNumberInput.value = '';
+                    videoLinkInput.value = '';
+                    logoFileInput.value = '';
+                    logoFileNameSpan.textContent = 'لم يتم اختيار ملف';
+                    loadMonthsForSelect(deleteMonthSelect, deleteYearSelect.value);
 
-                                alert('تم رفع المحاضرة بنجاح!');
-                                
-                                // Reset Form
-                                titleInput.value = '';
-                                lectureNumberInput.value = '';
-                                videoFileInput.value = '';
-                                logoFileInput.value = '';
-                                videoFileNameSpan.textContent = 'لم يتم اختيار ملف';
-                                logoFileNameSpan.textContent = 'لم يتم اختيار ملف';
-                                resetUploadUI();
-                                loadMonthsForSelect(deleteMonthSelect, deleteYearSelect.value);
-
-                            } catch (error) {
-                                console.error('Failed to save data', error);
-                                alert(`حدث خطأ بعد الرفع: ${error.message}`);
-                                resetUploadUI();
-                            }
-                        }
-                    );
                 } catch (error) {
-                    console.error('Upload failed', error);
+                    console.error('Save failed', error);
                     alert(`خطأ غير متوقع: ${error.message}`);
-                    resetUploadUI();
+                } finally {
+                    uploadText.textContent = 'حفظ المحاضرة';
+                    uploadButton.disabled = false;
                 }
             });
 
-            function resetUploadUI() {
-                uploadText.textContent = 'بدء الرفع';
-                uploadButton.disabled = false;
-                uploadOverlay.style.display = 'none';
-            }
-
-            // --- Delete Logic ---
+            // 🌟 دالة الحذف الذكية المتوافقة 🌟
             showDeleteButton.addEventListener('click', async () => {
                 const selectedYear = deleteYearSelect.value;
                 const selectedMonth = deleteMonthSelect.value;
@@ -935,50 +448,38 @@
                                 `;
                                 lecturesList.appendChild(li);
                             });
-                        } else {
-                            lecturesList.innerHTML = '<li style="text-align:center; padding:20px;">لا توجد محاضرات في هذا التصنيف.</li>';
-                        }
-                    } else {
-                        lecturesList.innerHTML = '<li style="text-align:center; padding:20px;">لا توجد محاضرات في هذا التصنيف.</li>';
-                    }
-                } catch (error) {
-                    console.error("Error fetching lectures:", error);
-                    lecturesList.innerHTML = '<li style="text-align:center; color:red; padding:20px;">حدث خطأ أثناء جلب البيانات.</li>';
-                }
+                        } else { lecturesList.innerHTML = '<li style="text-align:center; padding:20px;">لا توجد محاضرات في هذا التصنيف.</li>'; }
+                    } else { lecturesList.innerHTML = '<li style="text-align:center; padding:20px;">لا توجد محاضرات في هذا التصنيف.</li>'; }
+                } catch (error) { lecturesList.innerHTML = '<li style="text-align:center; color:red; padding:20px;">حدث خطأ أثناء جلب البيانات.</li>'; }
             });
 
             closeModal.onclick = function() { deleteModal.style.display = 'none'; }
             window.onclick = function(event) { if (event.target == deleteModal) deleteModal.style.display = 'none'; }
 
             window.deleteLecture = async function(year, lectureId, videoPath, logoPath, month) {
-                if (!window.confirm('هل أنت متأكد تماماً من حذف هذه المحاضرة؟ لا يمكن استرجاعها.')) return;
+                if (!window.confirm('هل أنت متأكد تماماً من حذف هذه المحاضرة؟')) return;
 
                 try {
                     const dbPath = getDbPath(year, month, lectureId);
                     await database.ref(dbPath).remove();
 
-                    if(videoPath) {
-                        const videoStorageRef = storage.ref(videoPath);
-                        await videoStorageRef.delete().catch(err => console.log('Video file not found or already deleted'));
-                    }
-
-                    if (logoPath && logoPath.length > 0) {
+                    // نمسح الصورة من الستوريدج إذا كانت موجودة كمسار فايربيز (ولا تبدأ بـ http)
+                    if (logoPath && logoPath.length > 0 && !logoPath.startsWith('http')) {
                         const logoStorageRef = storage.ref(logoPath);
-                        await logoStorageRef.delete().catch(err => console.log('Logo file not found or already deleted'));
+                        await logoStorageRef.delete().catch(err => console.log('Logo skipped or deleted'));
                     }
 
-                    // Refresh List
+                    // لا نمسح الـ videoPath لأنه في هذه الصفحة عبارة عن رابط يوتيوب أو خارجي وليس ملفاً في الستوريدج
+
                     const li = event.target.closest('li');
                     if(li) li.remove();
                     
                     alert('تم الحذف بنجاح');
-                    if(lecturesList.children.length === 0) {
-                        deleteModal.style.display = 'none';
-                    }
+                    if(lecturesList.children.length === 0) deleteModal.style.display = 'none';
 
                 } catch (error) {
                     console.error("Error deleting lecture:", error);
-                    alert("حدث خطأ أثناء الحذف، يرجى مراجعة وحدة التحكم (Console).");
+                    alert("حدث خطأ أثناء الحذف.");
                 }
             }
         } 
