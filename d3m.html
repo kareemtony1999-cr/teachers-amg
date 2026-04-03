@@ -1,72 +1,357 @@
 <!DOCTYPE html>
 <html lang="ar" dir="rtl">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>لوحة تحكم AMG - WhatsApp Style</title>
     <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
-    
+
     <style>
-        :root { --primary: #06467A; --bg: #dadbd3; --student-msg: #ffffff; --admin-msg: #dcf8c6; --delete: #e74c3c; }
-        * { box-sizing: border-box; font-family: 'Cairo', sans-serif; margin: 0; padding: 0; }
-        body { background-color: var(--bg); height: 100vh; display: flex; align-items: center; justify-content: center; overflow: hidden; }
+        :root {
+            --primary: #06467A;
+            --bg: #dadbd3;
+            --student-msg: #ffffff;
+            --admin-msg: #dcf8c6;
+            --delete: #e74c3c;
+        }
 
-        #admin-panel { display: none; width: 100%; height: 100vh; background: #fff; flex-direction: row-reverse; position: relative; }
-        .sidebar { width: 30%; min-width: 320px; border-right: 1px solid #ddd; display: flex; flex-direction: column; background: #fff; height: 100%; }
-        .sidebar-header { padding: 15px; background: #f0f2f5; border-bottom: 1px solid #ddd; display: flex; justify-content: space-between; align-items: center; font-weight: bold; }
-        #server-selector-container { padding: 12px; background: var(--primary); color: #fff; }
-        select { width: 100%; padding: 10px; border-radius: 8px; border: none; font-weight: 600; cursor: pointer; outline: none;}
+        * {
+            box-sizing: border-box;
+            font-family: 'Cairo', sans-serif;
+            margin: 0;
+            padding: 0;
+        }
 
-        .switch { position: relative; display: inline-block; width: 44px; height: 24px; }
-        .switch input { opacity: 0; width: 0; height: 0; }
-        .slider { position: absolute; cursor: pointer; top: 0; left: 0; right: 0; bottom: 0; background-color: #ccc; transition: .4s; border-radius: 24px; }
-        .slider:before { position: absolute; content: ""; height: 18px; width: 18px; left: 3px; bottom: 3px; background-color: white; transition: .4s; border-radius: 50%; }
-        input:checked + .slider { background-color: #27ae60; }
-        input:checked + .slider:before { transform: translateX(20px); }
+        body {
+            background-color: var(--bg);
+            height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            overflow: hidden;
+        }
 
-        .chat-list { flex: 1; overflow-y: auto; -webkit-overflow-scrolling: touch; }
-        .chat-item { display: flex; align-items: center; padding: 15px; cursor: pointer; border-bottom: 1px solid #f8f9fa; transition: background 0.2s;}
-        .chat-item:hover { background: #f5f6f6; }
-        .chat-item.active-chat { background: #ebebeb; } 
-        
-        .avatar { width: 48px; height: 48px; background: var(--primary); color: #fff; border-radius: 50%; display: flex; align-items: center; justify-content: center; margin-left: 15px; font-weight: bold; flex-shrink: 0;}
-        .unread-badge { background-color: #e74c3c; color: white; font-size: 12px; font-weight: bold; min-width: 22px; height: 22px; border-radius: 11px; display: flex; align-items: center; justify-content: center; padding: 0 6px; margin-right: 10px; }
+        #admin-panel {
+            display: none;
+            width: 100%;
+            height: 100vh;
+            background: #fff;
+            flex-direction: row-reverse;
+            position: relative;
+        }
 
-        .main-chat { flex: 1; display: flex; flex-direction: column; background: #e5ddd5; border-left: 1px solid #ddd; height: 100%; }
-        .chat-header { padding: 12px 20px; background: #f0f2f5; display: flex; align-items: center; border-bottom: 1px solid #ddd; }
-        
-        #messages-container { flex: 1; padding: 25px; overflow-y: auto; display: flex; flex-direction: column; background-image: url('https://user-images.githubusercontent.com/15075759/28719144-86dc0f70-73b1-11e7-911d-60d70fcded21.png'); }
-        .message-wrapper { display: flex; align-items: center; margin-bottom: 10px; width: 100%; }
-        .message { max-width: 65%; padding: 10px 15px; border-radius: 12px; font-size: 15px; position: relative; box-shadow: 0 1px 2px rgba(0,0,0,0.1); line-height: 1.5; transition: opacity 0.2s ease-in-out; }
-        .msg-student { align-self: flex-start; background: #ffffff; border-top-right-radius: 2px; text-align: right; }
-        .msg-admin { align-self: flex-end; background: #dcf8c6; border-top-left-radius: 2px; text-align: right; }
-        .delete-btn-icon { color: var(--delete); cursor: pointer; margin: 0 12px; opacity: 0.1; transition: 0.2s; font-size: 15px; }
-        .message-wrapper:hover .delete-btn-icon { opacity: 1; }
-        .msg-time { font-size: 10px; color: #888; margin-top: 5px; text-align: left; direction: ltr; display: inline-block; float: left; }
-        .msg-img { max-width: 100%; border-radius: 8px; margin-top: 5px; cursor: pointer; }
+        .sidebar {
+            width: 30%;
+            min-width: 320px;
+            border-right: 1px solid #ddd;
+            display: flex;
+            flex-direction: column;
+            background: #fff;
+            height: 100%;
+        }
 
-        .input-area { padding: 10px 15px; background: #f0f2f5; display: flex; align-items: center; gap: 10px; border-top: 1px solid #ddd; }
-        #message-input { flex: 1; padding: 12px 18px; border-radius: 25px; border: none; outline: none; font-size: 15px; }
-        .send-btn { background: var(--primary); color: #fff; border: none; width: 45px; height: 45px; border-radius: 50%; cursor: pointer; font-size: 20px; flex-shrink: 0;}
-        .back-btn { display: none; margin-left: 15px; font-size: 20px; cursor: pointer; color: #54656f; padding: 5px; }
+        .sidebar-header {
+            padding: 15px;
+            background: #f0f2f5;
+            border-bottom: 1px solid #ddd;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            font-weight: bold;
+        }
+
+        #server-selector-container {
+            padding: 12px;
+            background: var(--primary);
+            color: #fff;
+        }
+
+        select {
+            width: 100%;
+            padding: 10px;
+            border-radius: 8px;
+            border: none;
+            font-weight: 600;
+            cursor: pointer;
+            outline: none;
+        }
+
+        .switch {
+            position: relative;
+            display: inline-block;
+            width: 44px;
+            height: 24px;
+        }
+
+        .switch input {
+            opacity: 0;
+            width: 0;
+            height: 0;
+        }
+
+        .slider {
+            position: absolute;
+            cursor: pointer;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-color: #ccc;
+            transition: .4s;
+            border-radius: 24px;
+        }
+
+        .slider:before {
+            position: absolute;
+            content: "";
+            height: 18px;
+            width: 18px;
+            left: 3px;
+            bottom: 3px;
+            background-color: white;
+            transition: .4s;
+            border-radius: 50%;
+        }
+
+        input:checked+.slider {
+            background-color: #27ae60;
+        }
+
+        input:checked+.slider:before {
+            transform: translateX(20px);
+        }
+
+        .chat-list {
+            flex: 1;
+            overflow-y: auto;
+            -webkit-overflow-scrolling: touch;
+        }
+
+        .chat-item {
+            display: flex;
+            align-items: center;
+            padding: 15px;
+            cursor: pointer;
+            border-bottom: 1px solid #f8f9fa;
+            transition: background 0.2s;
+        }
+
+        .chat-item:hover {
+            background: #f5f6f6;
+        }
+
+        .chat-item.active-chat {
+            background: #ebebeb;
+        }
+
+        .avatar {
+            width: 48px;
+            height: 48px;
+            background: var(--primary);
+            color: #fff;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-left: 15px;
+            font-weight: bold;
+            flex-shrink: 0;
+        }
+
+        .unread-badge {
+            background-color: #e74c3c;
+            color: white;
+            font-size: 12px;
+            font-weight: bold;
+            min-width: 22px;
+            height: 22px;
+            border-radius: 11px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 0 6px;
+            margin-right: 10px;
+        }
+
+        .main-chat {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            background: #e5ddd5;
+            border-left: 1px solid #ddd;
+            height: 100%;
+        }
+
+        .chat-header {
+            padding: 12px 20px;
+            background: #f0f2f5;
+            display: flex;
+            align-items: center;
+            border-bottom: 1px solid #ddd;
+        }
+
+        #messages-container {
+            flex: 1;
+            padding: 25px;
+            overflow-y: auto;
+            display: flex;
+            flex-direction: column;
+            background-image: url('https://user-images.githubusercontent.com/15075759/28719144-86dc0f70-73b1-11e7-911d-60d70fcded21.png');
+        }
+
+        .message-wrapper {
+            display: flex;
+            align-items: center;
+            margin-bottom: 10px;
+            width: 100%;
+        }
+
+        .message {
+            max-width: 65%;
+            padding: 10px 15px;
+            border-radius: 12px;
+            font-size: 15px;
+            position: relative;
+            box-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
+            line-height: 1.5;
+            transition: opacity 0.2s ease-in-out;
+        }
+
+        .msg-student {
+            align-self: flex-start;
+            background: #ffffff;
+            border-top-right-radius: 2px;
+            text-align: right;
+        }
+
+        .msg-admin {
+            align-self: flex-end;
+            background: #dcf8c6;
+            border-top-left-radius: 2px;
+            text-align: right;
+        }
+
+        .delete-btn-icon {
+            color: var(--delete);
+            cursor: pointer;
+            margin: 0 12px;
+            opacity: 0.1;
+            transition: 0.2s;
+            font-size: 15px;
+        }
+
+        .message-wrapper:hover .delete-btn-icon {
+            opacity: 1;
+        }
+
+        .msg-time {
+            font-size: 10px;
+            color: #888;
+            margin-top: 5px;
+            text-align: left;
+            direction: ltr;
+            display: inline-block;
+            float: left;
+        }
+
+        .msg-img {
+            max-width: 100%;
+            border-radius: 8px;
+            margin-top: 5px;
+            cursor: pointer;
+        }
+
+        .input-area {
+            padding: 10px 15px;
+            background: #f0f2f5;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            border-top: 1px solid #ddd;
+        }
+
+        #message-input {
+            flex: 1;
+            padding: 12px 18px;
+            border-radius: 25px;
+            border: none;
+            outline: none;
+            font-size: 15px;
+        }
+
+        .send-btn {
+            background: var(--primary);
+            color: #fff;
+            border: none;
+            width: 45px;
+            height: 45px;
+            border-radius: 50%;
+            cursor: pointer;
+            font-size: 20px;
+            flex-shrink: 0;
+        }
+
+        .back-btn {
+            display: none;
+            margin-left: 15px;
+            font-size: 20px;
+            cursor: pointer;
+            color: #54656f;
+            padding: 5px;
+        }
 
         @media (max-width: 768px) {
-            #admin-panel { display: block; }
-            .sidebar { width: 100%; position: absolute; z-index: 10; top: 0; right: 0; transition: transform 0.3s ease-in-out; }
-            .sidebar.hidden { transform: translateX(100%); } 
-            .main-chat { width: 100%; position: absolute; top: 0; right: 0; z-index: 5; }
-            .back-btn { display: block; } 
-            #messages-container { padding: 15px; }
-            .message { max-width: 85%; }
-            .delete-btn-icon { opacity: 1; font-size: 18px; } 
+            #admin-panel {
+                display: block;
+            }
+
+            .sidebar {
+                width: 100%;
+                position: absolute;
+                z-index: 10;
+                top: 0;
+                right: 0;
+                transition: transform 0.3s ease-in-out;
+            }
+
+            .sidebar.hidden {
+                transform: translateX(100%);
+            }
+
+            .main-chat {
+                width: 100%;
+                position: absolute;
+                top: 0;
+                right: 0;
+                z-index: 5;
+            }
+
+            .back-btn {
+                display: block;
+            }
+
+            #messages-container {
+                padding: 15px;
+            }
+
+            .message {
+                max-width: 85%;
+            }
+
+            .delete-btn-icon {
+                opacity: 1;
+                font-size: 18px;
+            }
         }
     </style>
 </head>
+
 <body>
 
     <div id="admin-panel">
-        
+
         <div class="sidebar" id="sidebar">
             <div id="server-selector-container">
                 <select id="server-select" onchange="filterChatsByServer()"></select>
@@ -74,16 +359,17 @@
             <div class="sidebar-header">
                 <span>المحادثات</span>
             </div>
-            
-            <div id="bot-ui-container" style="display: none; padding: 12px 15px; background: #eaf4fa; border-bottom: 1px solid #ddd; justify-content: space-between; align-items: center;">
+
+            <div id="bot-ui-container"
+                style="display: none; padding: 12px 15px; background: #eaf4fa; border-bottom: 1px solid #ddd; justify-content: space-between; align-items: center;">
                 <div>
                     <i class="fas fa-robot" style="color: var(--primary); font-size: 18px;"></i>
                     <span style="font-weight: 600; margin-right: 8px;">مساعد الرياضيات</span>
                     <div id="bot-status-text" style="font-size: 12px; color: #e74c3c; margin-top: 4px;">متوقف 🔴</div>
                 </div>
                 <label class="switch">
-                  <input type="checkbox" id="botToggle" onchange="toggleBot(this.checked)">
-                  <span class="slider round"></span>
+                    <input type="checkbox" id="botToggle" onchange="toggleBot(this.checked)">
+                    <span class="slider round"></span>
                 </label>
             </div>
 
@@ -98,11 +384,13 @@
                     <div id="active-name" style="font-weight: bold; color: #111;"></div>
                     <div id="active-phone" style="font-size: 12px; color: #27ae60; font-weight: bold;"></div>
                 </div>
-                <i class="fas fa-trash-alt" style="color:var(--delete); cursor:pointer; font-size: 18px; padding: 5px;" onclick="deleteFullChat()" title="مسح الشات بالكامل"></i>
+                <i class="fas fa-trash-alt" style="color:var(--delete); cursor:pointer; font-size: 18px; padding: 5px;"
+                    onclick="deleteFullChat()" title="مسح الشات بالكامل"></i>
             </div>
 
             <div id="messages-container">
-                <div style="display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100%; color: #777; text-align: center;">
+                <div
+                    style="display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100%; color: #777; text-align: center;">
                     <i class="fab fa-whatsapp" style="font-size: 80px; color: #ccc; margin-bottom: 20px;"></i>
                     <h2>AMG Web Support</h2>
                     <p>اختر طالباً من القائمة للبدء</p>
@@ -139,11 +427,12 @@
 
         // 🌟 المتغيرات الجديدة الخاصة بالـ Failover
         let PRIMARY_KEY = "";
+        let GEMINI_KEY = "";
         let BACKUP_KEY = "";
-        
+
         let isBotActive = false;
-        let botActivationTime = 0; 
-        let processingMessages = new Set(); 
+        let botActivationTime = 0;
+        let processingMessages = new Set();
         let aiCache = JSON.parse(localStorage.getItem('amg_bot_cache')) || {};
 
         let selectedServer = "";
@@ -151,10 +440,11 @@
         let currentStudentName = "";
         let chatListenerRef = null;
         let permissionListenerRef = null;
-        let currentExpireInterval = null; 
+        let currentExpireInterval = null;
 
         // جلب المفاتيح
         db.ref('settings/primary_api_key').on('value', snap => { PRIMARY_KEY = snap.val() || ""; });
+        db.ref('settings/gemini_api_key').on('value', snap => { GEMINI_KEY = snap.val() || ""; });
         db.ref('settings/backup_api_key').on('value', snap => { BACKUP_KEY = snap.val() || ""; });
 
         auth.onAuthStateChanged(user => {
@@ -172,7 +462,7 @@
                 if (teaSnap.exists()) {
                     initPanel(teaSnap.val().split('.'));
                     document.getElementById('admin-panel').style.display = 'flex';
-                } else { 
+                } else {
                     auth.signOut().then(() => window.location.href = 'index.html');
                 }
             }
@@ -187,18 +477,18 @@
         function initPanel(servers) {
             const select = document.getElementById('server-select');
             select.innerHTML = servers.map(s => `<option value="${s}">${s}</option>`).join('');
-            if (!selectedServer || !servers.includes(selectedServer)) { 
-                selectedServer = servers[0]; 
+            if (!selectedServer || !servers.includes(selectedServer)) {
+                selectedServer = servers[0];
             }
             select.value = selectedServer;
-            filterChatsByServer(); 
+            filterChatsByServer();
         }
 
         function filterChatsByServer() {
             selectedServer = document.getElementById('server-select').value;
             currentChatPath = "";
             currentStudentName = "";
-            
+
             if (chatListenerRef) { chatListenerRef.off(); chatListenerRef = null; }
             document.getElementById('chat-header').style.display = 'none';
             document.getElementById('input-area').style.display = 'none';
@@ -209,20 +499,20 @@
                     <p>اختر طالباً من القائمة للبدء</p>
                 </div>`;
             document.getElementById('chat-list').innerHTML = '<div style="text-align:center; padding:20px; color:#888;">جاري التحميل...</div>';
-            
+
             fetchChats();
-            checkBotPermission(); 
+            checkBotPermission();
         }
 
         function checkBotPermission() {
-            if(permissionListenerRef) permissionListenerRef.off();
-            if(currentExpireInterval) clearInterval(currentExpireInterval); 
-            
+            if (permissionListenerRef) permissionListenerRef.off();
+            if (currentExpireInterval) clearInterval(currentExpireInterval);
+
             permissionListenerRef = db.ref(`settings/bot_access/${selectedServer}`);
             permissionListenerRef.on('value', snap => {
                 const data = snap.val();
                 let hasPermission = false;
-                
+
                 if (currentExpireInterval) clearInterval(currentExpireInterval);
 
                 if (typeof data === 'boolean') {
@@ -234,24 +524,24 @@
                             currentExpireInterval = setInterval(() => {
                                 if (Date.now() >= data.expireAt) {
                                     clearInterval(currentExpireInterval);
-                                    db.ref(`settings/bot_access/${selectedServer}`).set({active: false, expireAt: null});
+                                    db.ref(`settings/bot_access/${selectedServer}`).set({ active: false, expireAt: null });
                                 }
                             }, 1000);
                         } else {
                             hasPermission = false;
-                            db.ref(`settings/bot_access/${selectedServer}`).set({active: false, expireAt: null});
+                            db.ref(`settings/bot_access/${selectedServer}`).set({ active: false, expireAt: null });
                         }
                     } else {
-                        hasPermission = true; 
+                        hasPermission = true;
                     }
                 }
 
                 const botUI = document.getElementById('bot-ui-container');
-                if(hasPermission) {
+                if (hasPermission) {
                     botUI.style.display = 'flex';
                 } else {
                     botUI.style.display = 'none';
-                    if(isBotActive) {
+                    if (isBotActive) {
                         document.getElementById('botToggle').checked = false;
                         toggleBot(false);
                     }
@@ -262,18 +552,18 @@
         function toggleBot(state) {
             isBotActive = state;
             const statusText = document.getElementById('bot-status-text');
-            if(state) {
-                if(!PRIMARY_KEY && !BACKUP_KEY) {
+            if (state) {
+                if (!PRIMARY_KEY && !BACKUP_KEY && !GEMINI_KEY) {
                     alert("لم يتم إعداد مفاتيح السيرفرات في لوحة الإدارة بعد!");
                     document.getElementById('botToggle').checked = false;
                     isBotActive = false;
                     return;
                 }
-                botActivationTime = Date.now(); 
-                processingMessages.clear(); 
+                botActivationTime = Date.now();
+                processingMessages.clear();
                 statusText.innerText = "يعمل الآن 🟢";
                 statusText.style.color = "#27ae60";
-                filterChatsByServer(); 
+                filterChatsByServer();
             } else {
                 botActivationTime = 0;
                 statusText.innerText = "متوقف 🔴";
@@ -287,66 +577,166 @@
         function getPMod() { return atob('bGxhbWEtMy4zLTcwYi12ZXJzYXRpbGU='); }
         function getBMod() { return atob('ZGVlcHNlZWstY2hhdA=='); }
 
-        async function processAIRequest(messagesArray) {
-            let replyText = null;
+        async function fetchImageAsBase64(url) {
+            if (!url) return null;
+            try {
+                // استخدام بروكسي لتجاوز الحماية وتقرأ الصورة بنجاح بدون تعديل الفايربيز
+                const proxyUrl = `https://api.allorigins.win/raw?url=${encodeURIComponent(url)}`;
+                const response = await fetch(proxyUrl);
+                if (!response.ok) throw new Error("Network error");
+                const blob = await response.blob();
+                return new Promise((resolve, reject) => {
+                    const reader = new FileReader();
+                    reader.onloadend = () => {
+                        resolve({
+                            mimeType: blob.type || 'image/jpeg',
+                            data: reader.result.split(',')[1]
+                        });
+                    };
+                    reader.onerror = reject;
+                    reader.readAsDataURL(blob);
+                });
+            } catch (e) {
+                console.warn("⚠️ فشل جلب الصورة برمجياً:", e);
+                return null;
+            }
+        }
 
-            // المحاولة الأولى (السيرفر الأساسي)
+        async function requestGemini(geminiKey, history) {
+            const contents = [];
+            let systemText = "";
+
+            for (let msg of history) {
+                if (msg.role === 'system') {
+                    systemText = msg.content;
+                    continue;
+                }
+
+                const parts = [];
+                // النص
+                if (msg.content) parts.push({ text: msg.content });
+
+                // الصورة
+                if (msg.imageUrl) {
+                    const imgData = await fetchImageAsBase64(msg.imageUrl);
+                    if (imgData) {
+                        parts.push({ inlineData: imgData });
+                    }
+                }
+
+                if (parts.length > 0) {
+                    contents.push({
+                        role: msg.role === 'user' ? 'user' : 'model',
+                        parts: parts
+                    });
+                }
+            }
+
+            if (contents.length === 0) throw new Error("Empty contents");
+
+            const body = {
+                contents: contents,
+                generationConfig: { temperature: 0.4, maxOutputTokens: 400 }
+            };
+
+            if (systemText) {
+                body.systemInstruction = { parts: [{ text: systemText }] };
+            }
+
+            const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${geminiKey}`;
+            const res = await fetch(url, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(body)
+            });
+
+            if (res.ok) {
+                const data = await res.json();
+                if (data.candidates && data.candidates[0].content && data.candidates[0].content.parts.length > 0) {
+                    return data.candidates[0].content.parts[0].text;
+                }
+            }
+            throw new Error("Gemini API request failed");
+        }
+
+        async function processAIRequest(messagesArray, hasImage) {
+            // مسار الصور: موديل جيميناي فقط
+            if (hasImage) {
+                if (GEMINI_KEY) {
+                    try {
+                        const rep = await requestGemini(GEMINI_KEY, messagesArray);
+                        if (rep) return rep;
+                    } catch (e) {
+                        console.error("Gemini failed for image", e);
+                    }
+                }
+                return null;
+            }
+
+            // مسار النصوص: جروك أولاً، جيمناي ثانياً، ديب سيك ثالثاً
+            const openaiMessages = messagesArray.map(m => ({
+                role: m.role === 'system' ? 'system' : (m.role === 'model' || m.role === 'assistant' ? 'assistant' : 'user'),
+                content: m.content || ""
+            }));
+
+            // 1. Groq (Primary)
             if (PRIMARY_KEY) {
                 try {
                     const res1 = await fetch(getPUrl(), {
                         method: 'POST',
                         headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${PRIMARY_KEY}` },
-                        body: JSON.stringify({ model: getPMod(), messages: messagesArray, temperature: 0.4, max_tokens: 300 })
+                        body: JSON.stringify({ model: getPMod(), messages: openaiMessages, temperature: 0.4, max_tokens: 400 })
                     });
                     if (res1.ok) {
                         const d1 = await res1.json();
-                        replyText = d1.choices[0].message.content;
-                        return replyText; // نجاح السيرفر الأول
+                        return d1.choices[0].message.content;
                     }
-                    throw new Error("Primary Limits Reached"); // إذا أرجع 429 أو غيره، نرمي خطأ لننتقل للاحتياطي
-                } catch (e) {
-                    console.log("Switching to Backup Server...");
-                }
+                } catch (e) { console.warn("Primary API failed."); }
             }
 
-            // المحاولة الثانية (السيرفر الاحتياطي) في حال فشل الأول
+            // 2. Gemini (Fallback 1)
+            if (GEMINI_KEY) {
+                try {
+                    const rep = await requestGemini(GEMINI_KEY, messagesArray);
+                    if (rep) return rep;
+                } catch (e) { console.warn("Gemini API failed."); }
+            }
+
+            // 3. DeepSeek (Fallback 2)
             if (BACKUP_KEY) {
                 try {
                     const res2 = await fetch(getBUrl(), {
                         method: 'POST',
                         headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${BACKUP_KEY}` },
-                        body: JSON.stringify({ model: getBMod(), messages: messagesArray, temperature: 0.4, max_tokens: 300 })
+                        body: JSON.stringify({ model: getBMod(), messages: openaiMessages, temperature: 0.4, max_tokens: 400 })
                     });
                     if (res2.ok) {
                         const d2 = await res2.json();
-                        replyText = d2.choices[0].message.content;
-                        return replyText; // نجاح السيرفر الثاني
+                        return d2.choices[0].message.content;
                     }
-                } catch (e) {
-                    console.log("Backup Server failed too.");
-                }
+                } catch (e) { console.error("Backup API failed."); }
             }
 
-            return null; // فشل الاثنان معاً
+            return null;
         }
 
-        async function askDeepSeek(chatHistoryForApi, server, studentName, msgKey) {
+        async function askDeepSeek(chatHistoryForApi, server, studentName, msgKey, hasImage) {
             db.ref(`support_chats/${server}/${studentName}/${msgKey}/botReplied`).set('pending');
 
             try {
                 const apiMessages = [
-                    { 
-                        role: "system", 
+                    {
+                        role: "system",
                         content: "أنت مساعد ذكي وودود لمدرس رياضيات في منصة AMG التعليمية. \n" +
-                                 "قواعد هامة جداً:\n" +
-                                 "1. اقرأ الرسائل السابقة لتفهم سياق المحادثة.\n" +
-                                 "2. أجب حصراً على 'الرسالة الأخيرة' التي أرسلها المستخدم بناءً على السياق.\n" +
-                                 "3. تحدث بطبيعية. وإذا سألك الطالب (عامل إيه، كيف حالك)، رد بلطف.\n" +
-                                 "4. أجب على أسئلة الرياضيات بدقة وفي رسالة واحدة قصيرة فقط.\n" +
-                                 "5. إذا سألك عن تخصص آخر غير الرياضيات اعتذر بلطف وأخبره أنك مخصص للرياضيات فقط.\n" +
-                                 "6. لا تقم بتجزئة إجابتك، أرسل الرد كاملاً في فقرة واحدة."
+                            "قواعد هامة جداً:\n" +
+                            "1. اقرأ الرسائل السابقة لتفهم سياق المحادثة.\n" +
+                            "2. أجب حصراً على 'الرسالة الأخيرة' التي أرسلها المستخدم بناءً على السياق.\n" +
+                            "3. تحدث بطبيعية. وإذا سألك الطالب (عامل إيه، كيف حالك)، رد بلطف.\n" +
+                            "4. أجب على أسئلة الرياضيات بدقة وفي رسالة واحدة قصيرة فقط.\n" +
+                            "5. إذا سألك عن تخصص آخر غير الرياضيات اعتذر بلطف وأخبره أنك مخصص للرياضيات فقط.\n" +
+                            "6. لا تقم بتجزئة إجابتك، أرسل الرد كاملاً في فقرة واحدة."
                     },
-                    ...chatHistoryForApi 
+                    ...chatHistoryForApi
                 ];
 
                 const cacheKey = JSON.stringify(apiMessages);
@@ -355,18 +745,18 @@
                 if (aiCache[cacheKey]) {
                     const cachedReply = aiCache[cacheKey];
                     await saveBotReply(cachedReply, server, studentName, msgKey);
-                    return; 
+                    return;
                 }
 
                 // طلب الذكاء الاصطناعي بنظام التحويل الذكي (Failover)
-                const replyText = await processAIRequest(apiMessages);
+                const replyText = await processAIRequest(apiMessages, hasImage);
 
                 if (replyText) {
                     aiCache[cacheKey] = replyText;
                     localStorage.setItem('amg_bot_cache', JSON.stringify(aiCache));
                     await saveBotReply(replyText, server, studentName, msgKey);
                 } else {
-                    // فشل السيرفرين (نعيد العلامة لكي يحاول لاحقاً)
+                    // فشل السيرفرات بالكامل (نعيد العلامة لكي يحاول لاحقاً)
                     db.ref(`support_chats/${server}/${studentName}/${msgKey}/botReplied`).remove();
                     processingMessages.delete(msgKey);
                 }
@@ -384,7 +774,7 @@
                 text: text,
                 timestamp: Date.now(),
                 isFromAdmin: true,
-                isRead: true 
+                isRead: true
             });
             db.ref(`support_chats/${server}/${studentName}/${msgKey}/botReplied`).set(true);
         }
@@ -399,15 +789,15 @@
                 const listDiv = document.getElementById('chat-list');
                 listDiv.innerHTML = '';
                 const students = snap.val();
-                
+
                 if (students) {
                     let studentArray = [];
-                    
+
                     for (let name in students) {
                         const msgs = students[name];
                         let unreadCount = 0;
                         let lastTimestamp = 0;
-                        let chatHistory = []; 
+                        let chatHistory = [];
 
                         if (msgs) {
                             const msgList = Object.keys(msgs).map(key => {
@@ -419,37 +809,42 @@
                             msgList.forEach(m => {
                                 if (m.timestamp > lastTimestamp) lastTimestamp = m.timestamp;
                                 if (m.isFromAdmin === false && m.isRead === false) unreadCount++;
-                                if (m.text) {
-                                    chatHistory.push({ role: m.isFromAdmin ? "assistant" : "user", content: m.text });
+                                if (m.text || m.imageUrl) {
+                                    chatHistory.push({
+                                        role: m.isFromAdmin ? "assistant" : "user",
+                                        content: m.text || (m.imageUrl ? "" : ""),
+                                        imageUrl: m.imageUrl
+                                    });
                                 }
                             });
 
                             const lastMsg = msgList[msgList.length - 1];
                             let recentHistoryForApi = chatHistory.slice(-10);
+                            let hasImage = recentHistoryForApi.some(m => m.imageUrl);
 
-                            if (isBotActive && lastMsg && lastMsg.isFromAdmin === false && !lastMsg.botReplied && lastMsg.text && lastMsg.timestamp >= botActivationTime) {
+                            if (isBotActive && lastMsg && lastMsg.isFromAdmin === false && !lastMsg.botReplied && (lastMsg.text || lastMsg.imageUrl) && lastMsg.timestamp >= botActivationTime) {
                                 if (!processingMessages.has(lastMsg.key)) {
-                                    processingMessages.add(lastMsg.key); 
+                                    processingMessages.add(lastMsg.key);
                                     db.ref(`support_chats/${selectedServer}/${name}/${lastMsg.key}/botReplied`).set('processing');
-                                    askDeepSeek(recentHistoryForApi, selectedServer, name, lastMsg.key);
+                                    askDeepSeek(recentHistoryForApi, selectedServer, name, lastMsg.key, hasImage);
                                 }
                             }
                         }
                         studentArray.push({ name, unreadCount, lastTimestamp });
                     }
-                    
+
                     studentArray.sort((a, b) => b.lastTimestamp - a.lastTimestamp);
 
                     studentArray.forEach(studentObj => {
                         const name = studentObj.name;
                         const unread = studentObj.unreadCount;
-                        
+
                         const item = document.createElement('div');
                         item.className = 'chat-item';
                         if (`support_chats/${selectedServer}/${name}` === currentChatPath) item.classList.add('active-chat');
 
                         item.onclick = () => openChat(selectedServer, name);
-                        
+
                         let badgeHtml = unread > 0 ? `<div class="unread-badge">${unread}</div>` : '';
 
                         item.innerHTML = `
@@ -474,7 +869,7 @@
             let minutes = date.getMinutes();
             const ampm = hours >= 12 ? 'م' : 'ص';
             hours = hours % 12;
-            hours = hours ? hours : 12; 
+            hours = hours ? hours : 12;
             minutes = minutes < 10 ? '0' + minutes : minutes;
             return hours + ':' + minutes + ' ' + ampm;
         }
@@ -484,15 +879,15 @@
 
             currentChatPath = `support_chats/${server}/${student}`;
             currentStudentName = student;
-            
+
             const allItems = document.querySelectorAll('.chat-item');
             allItems.forEach(item => item.classList.remove('active-chat'));
-            
+
             document.getElementById('chat-header').style.display = 'flex';
             document.getElementById('input-area').style.display = 'flex';
             document.getElementById('active-name').innerText = student;
             document.getElementById('active-avatar').innerText = student[0];
-            
+
             db.ref('users').orderByChild('fullName').equalTo(student).once('value', snap => {
                 if (snap.exists()) {
                     const u = Object.values(snap.val())[0];
@@ -507,13 +902,13 @@
                 const container = document.getElementById('messages-container');
                 container.innerHTML = '';
                 const msgs = snap.val();
-                
+
                 if (msgs) {
-                    let updates = {}; 
+                    let updates = {};
 
                     Object.keys(msgs).forEach(key => {
                         const m = msgs[key];
-                        
+
                         if (m.isFromAdmin === false && m.isRead === false) {
                             updates[`${key}/isRead`] = true;
                         }
@@ -528,7 +923,7 @@
                         msgDiv.className = `message ${m.isFromAdmin ? 'msg-admin' : 'msg-student'}`;
                         let content = formattedText ? `<div style="margin-bottom: 4px;">${formattedText}</div>` : '';
                         if (m.imageUrl) content += `<img src="${m.imageUrl}" class="msg-img" onclick="window.open('${m.imageUrl}')">`;
-                        
+
                         const formattedTime = formatTime12Hour(m.timestamp);
                         msgDiv.innerHTML = `${content}<div class="msg-time">${formattedTime}</div><div style="clear:both;"></div>`;
 
@@ -554,7 +949,7 @@
             if (confirm("هل أنت متأكد من حذف هذه الرسالة نهائياً؟")) {
                 const snap = await db.ref(`${currentChatPath}/${msgId}`).get();
                 if (snap.exists() && snap.val().imageStoragePath) {
-                    try { await storage.ref(snap.val().imageStoragePath).delete(); } catch(e) {}
+                    try { await storage.ref(snap.val().imageStoragePath).delete(); } catch (e) { }
                 }
                 db.ref(`${currentChatPath}/${msgId}`).remove();
             }
@@ -567,7 +962,7 @@
                     const msgs = snap.val();
                     for (let key in msgs) {
                         if (msgs[key].imageStoragePath) {
-                            try { await storage.ref(msgs[key].imageStoragePath).delete(); } catch(e) {}
+                            try { await storage.ref(msgs[key].imageStoragePath).delete(); } catch (e) { }
                         }
                     }
                 }
@@ -575,10 +970,10 @@
                 document.getElementById('messages-container').innerHTML = '';
                 document.getElementById('chat-header').style.display = 'none';
                 document.getElementById('input-area').style.display = 'none';
-                
+
                 if (chatListenerRef) { chatListenerRef.off(); chatListenerRef = null; }
                 currentChatPath = "";
-                
+
                 toggleSidebar(true);
             }
         }
@@ -591,22 +986,23 @@
                 text: input.value.trim(),
                 timestamp: Date.now(),
                 isFromAdmin: true,
-                isRead: true 
+                isRead: true
             });
             input.value = '';
             input.focus();
         }
 
-        document.getElementById('message-input').addEventListener('keypress', e => { if(e.key==='Enter') sendReply(); });
+        document.getElementById('message-input').addEventListener('keypress', e => { if (e.key === 'Enter') sendReply(); });
 
         function toggleSidebar(show) {
             const sb = document.getElementById('sidebar');
             if (show) {
-                sb.classList.remove('hidden'); 
+                sb.classList.remove('hidden');
             } else {
-                sb.classList.add('hidden'); 
+                sb.classList.add('hidden');
             }
         }
     </script>
 </body>
+
 </html>
