@@ -78,7 +78,7 @@
             <div id="bot-ui-container" style="display: none; padding: 12px 15px; background: #eaf4fa; border-bottom: 1px solid #ddd; justify-content: space-between; align-items: center;">
                 <div>
                     <i class="fas fa-robot" style="color: var(--primary); font-size: 18px;"></i>
-                    <span style="font-weight: 600; margin-right: 8px;">مساعد الرياضيات (AI)</span>
+                    <span style="font-weight: 600; margin-right: 8px;">مساعد الرياضيات</span>
                     <div id="bot-status-text" style="font-size: 12px; color: #e74c3c; margin-top: 4px;">متوقف 🔴</div>
                 </div>
                 <label class="switch">
@@ -137,14 +137,13 @@
         const db = firebase.database();
         const storage = firebase.storage();
 
-        let DEEPSEEK_API_KEY = "";
-        const DEEPSEEK_URL = 'https://api.deepseek.com/chat/completions';
+        // 🌟 المتغيرات الجديدة الخاصة بالـ Failover
+        let PRIMARY_KEY = "";
+        let BACKUP_KEY = "";
         
         let isBotActive = false;
         let botActivationTime = 0; 
         let processingMessages = new Set(); 
-
-        // 🌟 استدعاء أو إنشاء الكاش من المتصفح (لتوفير التوكنز والسرعة)
         let aiCache = JSON.parse(localStorage.getItem('amg_bot_cache')) || {};
 
         let selectedServer = "";
@@ -154,9 +153,9 @@
         let permissionListenerRef = null;
         let currentExpireInterval = null; 
 
-        db.ref('settings/deepseek_api_key').on('value', snap => {
-            DEEPSEEK_API_KEY = snap.val() || "";
-        });
+        // جلب المفاتيح
+        db.ref('settings/primary_api_key').on('value', snap => { PRIMARY_KEY = snap.val() || ""; });
+        db.ref('settings/backup_api_key').on('value', snap => { BACKUP_KEY = snap.val() || ""; });
 
         auth.onAuthStateChanged(user => {
             if (!user) window.location.href = 'index.html';
@@ -264,8 +263,8 @@
             isBotActive = state;
             const statusText = document.getElementById('bot-status-text');
             if(state) {
-                if(!DEEPSEEK_API_KEY) {
-                    alert("لم يتم إعداد مفتاح API الخاص بـ DeepSeek في لوحة الإدارة بعد!");
+                if(!PRIMARY_KEY && !BACKUP_KEY) {
+                    alert("لم يتم إعداد مفاتيح السيرفرات في لوحة الإدارة بعد!");
                     document.getElementById('botToggle').checked = false;
                     isBotActive = false;
                     return;
@@ -282,6 +281,55 @@
             }
         }
 
+        // 🌟 دوال مساعدة لفك التشفير وإخفاء الروابط من הـ Inspect
+        function getPUrl() { return atob('aHR0cHM6Ly9hcGkuZ3JvcS5jb20vb3BlbmFpL3YxL2NoYXQvY29tcGxldGlvbnM='); }
+        function getBUrl() { return atob('aHR0cHM6Ly9hcGkuZGVlcHNlZWsuY29tL2NoYXQvY29tcGxldGlvbnM='); }
+        function getPMod() { return atob('bGxhbWEtMy4zLTcwYi12ZXJzYXRpbGU='); }
+        function getBMod() { return atob('ZGVlcHNlZWstY2hhdA=='); }
+
+        async function processAIRequest(messagesArray) {
+            let replyText = null;
+
+            // المحاولة الأولى (السيرفر الأساسي)
+            if (PRIMARY_KEY) {
+                try {
+                    const res1 = await fetch(getPUrl(), {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${PRIMARY_KEY}` },
+                        body: JSON.stringify({ model: getPMod(), messages: messagesArray, temperature: 0.4, max_tokens: 300 })
+                    });
+                    if (res1.ok) {
+                        const d1 = await res1.json();
+                        replyText = d1.choices[0].message.content;
+                        return replyText; // نجاح السيرفر الأول
+                    }
+                    throw new Error("Primary Limits Reached"); // إذا أرجع 429 أو غيره، نرمي خطأ لننتقل للاحتياطي
+                } catch (e) {
+                    console.log("Switching to Backup Server...");
+                }
+            }
+
+            // المحاولة الثانية (السيرفر الاحتياطي) في حال فشل الأول
+            if (BACKUP_KEY) {
+                try {
+                    const res2 = await fetch(getBUrl(), {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${BACKUP_KEY}` },
+                        body: JSON.stringify({ model: getBMod(), messages: messagesArray, temperature: 0.4, max_tokens: 300 })
+                    });
+                    if (res2.ok) {
+                        const d2 = await res2.json();
+                        replyText = d2.choices[0].message.content;
+                        return replyText; // نجاح السيرفر الثاني
+                    }
+                } catch (e) {
+                    console.log("Backup Server failed too.");
+                }
+            }
+
+            return null; // فشل الاثنان معاً
+        }
+
         async function askDeepSeek(chatHistoryForApi, server, studentName, msgKey) {
             db.ref(`support_chats/${server}/${studentName}/${msgKey}/botReplied`).set('pending');
 
@@ -293,7 +341,7 @@
                                  "قواعد هامة جداً:\n" +
                                  "1. اقرأ الرسائل السابقة لتفهم سياق المحادثة.\n" +
                                  "2. أجب حصراً على 'الرسالة الأخيرة' التي أرسلها المستخدم بناءً على السياق.\n" +
-                                 "3. تحدث بطبيعية. وإذا سألك الطالب (عامل إيه، كيف حالك)، رد بلطف مثل: 'أنا بخير والحمد لله! كيف أساعدك في الرياضيات؟'\n" +
+                                 "3. تحدث بطبيعية. وإذا سألك الطالب (عامل إيه، كيف حالك)، رد بلطف.\n" +
                                  "4. أجب على أسئلة الرياضيات بدقة وفي رسالة واحدة قصيرة فقط.\n" +
                                  "5. إذا سألك عن تخصص آخر غير الرياضيات اعتذر بلطف وأخبره أنك مخصص للرياضيات فقط.\n" +
                                  "6. لا تقم بتجزئة إجابتك، أرسل الرد كاملاً في فقرة واحدة."
@@ -301,71 +349,49 @@
                     ...chatHistoryForApi 
                 ];
 
-                // 🌟 إنشاء مفتاح كاش مميز بناءً على الرسائل للتحقق منه
                 const cacheKey = JSON.stringify(apiMessages);
 
-                // 🌟 التحقق من الذاكرة (الكاش) قبل إرسال الطلب لـ DeepSeek
+                // الكاش
                 if (aiCache[cacheKey]) {
-                    console.log("⚡ تم جلب الرد من الذاكرة (بدون استهلاك توكنز)");
                     const cachedReply = aiCache[cacheKey];
-
-                    await db.ref(`support_chats/${server}/${studentName}`).push().set({
-                        senderId: "BOT_ADMIN",
-                        senderName: "مساعد الرياضيات",
-                        text: cachedReply,
-                        timestamp: Date.now(),
-                        isFromAdmin: true,
-                        isRead: true 
-                    });
-
-                    db.ref(`support_chats/${server}/${studentName}/${msgKey}/botReplied`).set(true);
-                    return; // إنهاء الدالة فوراً بنجاح
+                    await saveBotReply(cachedReply, server, studentName, msgKey);
+                    return; 
                 }
 
-                // 🌟 لو لم يكن في الذاكرة، يتم طلب API
-                const response = await fetch(DEEPSEEK_URL, {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                        'Authorization': `Bearer ${DEEPSEEK_API_KEY}`
-                    },
-                    body: JSON.stringify({
-                        model: "deepseek-chat",
-                        messages: apiMessages,
-                        temperature: 0.4, 
-                        max_tokens: 300 
-                    })
-                });
+                // طلب الذكاء الاصطناعي بنظام التحويل الذكي (Failover)
+                const replyText = await processAIRequest(apiMessages);
 
-                if (response.ok) {
-                    const data = await response.json();
-                    const replyText = data.choices[0].message.content;
-
-                    // 🌟 حفظ الرد في الكاش المحلي للمرات القادمة
+                if (replyText) {
                     aiCache[cacheKey] = replyText;
                     localStorage.setItem('amg_bot_cache', JSON.stringify(aiCache));
-
-                    await db.ref(`support_chats/${server}/${studentName}`).push().set({
-                        senderId: "BOT_ADMIN",
-                        senderName: "مساعد الرياضيات",
-                        text: replyText,
-                        timestamp: Date.now(),
-                        isFromAdmin: true,
-                        isRead: true 
-                    });
-
-                    db.ref(`support_chats/${server}/${studentName}/${msgKey}/botReplied`).set(true);
+                    await saveBotReply(replyText, server, studentName, msgKey);
+                } else {
+                    // فشل السيرفرين (نعيد العلامة لكي يحاول لاحقاً)
+                    db.ref(`support_chats/${server}/${studentName}/${msgKey}/botReplied`).remove();
+                    processingMessages.delete(msgKey);
                 }
+
             } catch (error) {
-                console.error("DeepSeek API Error:", error);
+                db.ref(`support_chats/${server}/${studentName}/${msgKey}/botReplied`).remove();
                 processingMessages.delete(msgKey);
             }
+        }
+
+        async function saveBotReply(text, server, studentName, msgKey) {
+            await db.ref(`support_chats/${server}/${studentName}`).push().set({
+                senderId: "BOT_ADMIN",
+                senderName: "مساعد الرياضيات",
+                text: text,
+                timestamp: Date.now(),
+                isFromAdmin: true,
+                isRead: true 
+            });
+            db.ref(`support_chats/${server}/${studentName}/${msgKey}/botReplied`).set(true);
         }
 
         let serverChatsListenerRef = null;
         function fetchChats() {
             if (!selectedServer) return;
-            
             if (serverChatsListenerRef) { serverChatsListenerRef.off(); }
 
             serverChatsListenerRef = db.ref(`support_chats/${selectedServer}`);
