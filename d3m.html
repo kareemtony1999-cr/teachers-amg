@@ -12,117 +12,51 @@
         * { box-sizing: border-box; font-family: 'Cairo', sans-serif; margin: 0; padding: 0; }
         body { background-color: var(--bg); height: 100vh; display: flex; align-items: center; justify-content: center; overflow: hidden; }
 
-        /* الواجهة الرئيسية */
-        #admin-panel { 
-            display: none; 
-            width: 100%; 
-            height: 100vh; 
-            background: #fff; 
-            flex-direction: row-reverse; 
-            position: relative;
-        }
-        
-        /* القائمة الجانبية (يسار في الشاشات الكبيرة) */
-        .sidebar { 
-            width: 30%; 
-            min-width: 320px; 
-            border-right: 1px solid #ddd; 
-            display: flex; 
-            flex-direction: column; 
-            background: #fff; 
-            height: 100%;
-        }
-        .sidebar-header { 
-            padding: 15px; 
-            background: #f0f2f5; 
-            border-bottom: 1px solid #ddd; 
-            display: flex; 
-            justify-content: space-between; 
-            align-items: center; 
-            font-weight: bold; 
-        }
+        #admin-panel { display: none; width: 100%; height: 100vh; background: #fff; flex-direction: row-reverse; position: relative; }
+        .sidebar { width: 30%; min-width: 320px; border-right: 1px solid #ddd; display: flex; flex-direction: column; background: #fff; height: 100%; }
+        .sidebar-header { padding: 15px; background: #f0f2f5; border-bottom: 1px solid #ddd; display: flex; justify-content: space-between; align-items: center; font-weight: bold; }
         #server-selector-container { padding: 12px; background: var(--primary); color: #fff; }
         select { width: 100%; padding: 10px; border-radius: 8px; border: none; font-weight: 600; cursor: pointer; outline: none;}
 
-        .chat-list { 
-            flex: 1; 
-            overflow-y: auto; 
-            -webkit-overflow-scrolling: touch; 
-        }
+        .switch { position: relative; display: inline-block; width: 44px; height: 24px; }
+        .switch input { opacity: 0; width: 0; height: 0; }
+        .slider { position: absolute; cursor: pointer; top: 0; left: 0; right: 0; bottom: 0; background-color: #ccc; transition: .4s; border-radius: 24px; }
+        .slider:before { position: absolute; content: ""; height: 18px; width: 18px; left: 3px; bottom: 3px; background-color: white; transition: .4s; border-radius: 50%; }
+        input:checked + .slider { background-color: #27ae60; }
+        input:checked + .slider:before { transform: translateX(20px); }
+
+        .chat-list { flex: 1; overflow-y: auto; -webkit-overflow-scrolling: touch; }
         .chat-item { display: flex; align-items: center; padding: 15px; cursor: pointer; border-bottom: 1px solid #f8f9fa; transition: background 0.2s;}
         .chat-item:hover { background: #f5f6f6; }
-        .chat-item.active-chat { background: #ebebeb; } /* تمييز الشات المفتوح حالياً */
+        .chat-item.active-chat { background: #ebebeb; } 
         
         .avatar { width: 48px; height: 48px; background: var(--primary); color: #fff; border-radius: 50%; display: flex; align-items: center; justify-content: center; margin-left: 15px; font-weight: bold; flex-shrink: 0;}
+        .unread-badge { background-color: #e74c3c; color: white; font-size: 12px; font-weight: bold; min-width: 22px; height: 22px; border-radius: 11px; display: flex; align-items: center; justify-content: center; padding: 0 6px; margin-right: 10px; }
 
-        /* 🔴 الشارة الحمراء للرسائل غير المقروءة 🔴 */
-        .unread-badge {
-            background-color: #e74c3c;
-            color: white;
-            font-size: 12px;
-            font-weight: bold;
-            min-width: 22px;
-            height: 22px;
-            border-radius: 11px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            padding: 0 6px;
-            margin-right: 10px;
-            box-shadow: 0 2px 4px rgba(0,0,0,0.2);
-        }
-
-        /* منطقة المحادثة */
         .main-chat { flex: 1; display: flex; flex-direction: column; background: #e5ddd5; border-left: 1px solid #ddd; height: 100%; }
         .chat-header { padding: 12px 20px; background: #f0f2f5; display: flex; align-items: center; border-bottom: 1px solid #ddd; }
         
-        #messages-container { 
-            flex: 1; 
-            padding: 25px; 
-            overflow-y: auto; 
-            -webkit-overflow-scrolling: touch; 
-            display: flex; 
-            flex-direction: column; 
-            background-image: url('https://user-images.githubusercontent.com/15075759/28719144-86dc0f70-73b1-11e7-911d-60d70fcded21.png'); 
-        }
-        
+        #messages-container { flex: 1; padding: 25px; overflow-y: auto; display: flex; flex-direction: column; background-image: url('https://user-images.githubusercontent.com/15075759/28719144-86dc0f70-73b1-11e7-911d-60d70fcded21.png'); }
         .message-wrapper { display: flex; align-items: center; margin-bottom: 10px; width: 100%; }
-        .message { max-width: 65%; padding: 10px 15px; border-radius: 12px; font-size: 15px; position: relative; box-shadow: 0 1px 2px rgba(0,0,0,0.1); }
+        .message { max-width: 65%; padding: 10px 15px; border-radius: 12px; font-size: 15px; position: relative; box-shadow: 0 1px 2px rgba(0,0,0,0.1); line-height: 1.5; transition: opacity 0.2s ease-in-out; }
         .msg-student { align-self: flex-start; background: #ffffff; border-top-right-radius: 2px; text-align: right; }
         .msg-admin { align-self: flex-end; background: #dcf8c6; border-top-left-radius: 2px; text-align: right; }
-        
         .delete-btn-icon { color: var(--delete); cursor: pointer; margin: 0 12px; opacity: 0.1; transition: 0.2s; font-size: 15px; }
         .message-wrapper:hover .delete-btn-icon { opacity: 1; }
-
         .msg-time { font-size: 10px; color: #888; margin-top: 5px; text-align: left; direction: ltr; display: inline-block; float: left; }
         .msg-img { max-width: 100%; border-radius: 8px; margin-top: 5px; cursor: pointer; }
 
         .input-area { padding: 10px 15px; background: #f0f2f5; display: flex; align-items: center; gap: 10px; border-top: 1px solid #ddd; }
-        #message-input { flex: 1; padding: 12px 18px; border-radius: 25px; border: none; outline: none; }
+        #message-input { flex: 1; padding: 12px 18px; border-radius: 25px; border: none; outline: none; font-size: 15px; }
         .send-btn { background: var(--primary); color: #fff; border: none; width: 45px; height: 45px; border-radius: 50%; cursor: pointer; font-size: 20px; flex-shrink: 0;}
-        
-        /* زر العودة للموبايل */
         .back-btn { display: none; margin-left: 15px; font-size: 20px; cursor: pointer; color: #54656f; padding: 5px; }
 
-        /* تعديلات الهاتف (ستايل واتساب) */
         @media (max-width: 768px) {
             #admin-panel { display: block; }
-            
-            .sidebar { 
-                width: 100%; 
-                position: absolute; 
-                z-index: 10; 
-                top: 0;
-                right: 0;
-                transition: transform 0.3s ease-in-out; 
-            }
-            
+            .sidebar { width: 100%; position: absolute; z-index: 10; top: 0; right: 0; transition: transform 0.3s ease-in-out; }
             .sidebar.hidden { transform: translateX(100%); } 
-
             .main-chat { width: 100%; position: absolute; top: 0; right: 0; z-index: 5; }
-            
             .back-btn { display: block; } 
-            
             #messages-container { padding: 15px; }
             .message { max-width: 85%; }
             .delete-btn-icon { opacity: 1; font-size: 18px; } 
@@ -139,14 +73,26 @@
             </div>
             <div class="sidebar-header">
                 <span>المحادثات</span>
+            </div>
+            
+            <div id="bot-ui-container" style="display: none; padding: 12px 15px; background: #eaf4fa; border-bottom: 1px solid #ddd; justify-content: space-between; align-items: center;">
+                <div>
+                    <i class="fas fa-robot" style="color: var(--primary); font-size: 18px;"></i>
+                    <span style="font-weight: 600; margin-right: 8px;">مساعد الرياضيات (AI)</span>
+                    <div id="bot-status-text" style="font-size: 12px; color: #e74c3c; margin-top: 4px;">متوقف 🔴</div>
                 </div>
+                <label class="switch">
+                  <input type="checkbox" id="botToggle" onchange="toggleBot(this.checked)">
+                  <span class="slider round"></span>
+                </label>
+            </div>
+
             <div class="chat-list" id="chat-list"></div>
         </div>
 
         <div class="main-chat">
             <div class="chat-header" id="chat-header" style="display: none;">
                 <i class="fas fa-arrow-right back-btn" onclick="toggleSidebar(true)" title="رجوع للقائمة"></i>
-                
                 <div class="avatar" id="active-avatar">?</div>
                 <div style="margin-right: 15px; flex: 1;">
                     <div id="active-name" style="font-weight: bold; color: #111;"></div>
@@ -191,17 +137,32 @@
         const db = firebase.database();
         const storage = firebase.storage();
 
+        let DEEPSEEK_API_KEY = "";
+        const DEEPSEEK_URL = 'https://api.deepseek.com/chat/completions';
+        
+        let isBotActive = false;
+        let botActivationTime = 0; 
+        let processingMessages = new Set(); 
+
         let selectedServer = "";
         let currentChatPath = "";
         let currentStudentName = "";
-        let chatListenerRef = null; // 🌟 المتغير المسؤول عن حل مشكلة تداخل الشاتات
+        
+        // 🌟 متغيرات التحكم في اتصالات الداتا بيز (لمنع التداخل)
+        let chatListenerRef = null;       // اتصال الشات المفتوح حالياً
+        let serverChatsListenerRef = null; // اتصال القائمة الجانبية (الشاتات) للمدرس الحالي
+        let permissionListenerRef = null; // اتصال صلاحيات البوت
+        
+        let currentExpireInterval = null; 
+
+        // جلب الـ API Key بشكل تلقائي
+        db.ref('settings/deepseek_api_key').on('value', snap => {
+            DEEPSEEK_API_KEY = snap.val() || "";
+        });
 
         auth.onAuthStateChanged(user => {
-            if (!user) {
-                window.location.href = 'index.html';
-            } else {
-                checkPermissions(user.uid);
-            }
+            if (!user) window.location.href = 'index.html';
+            else checkPermissions(user.uid);
         });
 
         async function checkPermissions(uid) {
@@ -220,25 +181,39 @@
             }
         }
 
+        // 🌟 تعديل جلب السيرفرات باستخدام once لمنع عمل Refresh مستمر للـ dropdown
         function loadServers() {
-            db.ref('support_chats').on('value', snap => initPanel(Object.keys(snap.val() || {})));
+            db.ref('support_chats').once('value', snap => {
+                initPanel(Object.keys(snap.val() || {}));
+            });
         }
 
+        // 🌟 تهيئة السيرفرات والتأكد من الحفاظ على السيرفر المختار
         function initPanel(servers) {
             const select = document.getElementById('server-select');
             select.innerHTML = servers.map(s => `<option value="${s}">${s}</option>`).join('');
-            if (!selectedServer) { selectedServer = servers[0]; fetchChats(); }
+            
+            // إذا لم يكن هناك سيرفر محدد، نختار الأول ونستدعي فلاتر الشات
+            if (!selectedServer || !servers.includes(selectedServer)) { 
+                selectedServer = servers[0]; 
+            }
+            select.value = selectedServer;
+            
+            filterChatsByServer(); 
         }
 
+        // 🌟 فلترة الشات عند تغيير المدرس (إغلاق نظيف للاتصالات القديمة)
         function filterChatsByServer() {
             selectedServer = document.getElementById('server-select').value;
-            // تصفير الشات المفتوح عند تغيير السيرفر
             currentChatPath = "";
             currentStudentName = "";
             
-            // 🌟 إغلاق الاتصال بالشات القديم عند تغيير السيرفر
+            // 1. إغلاق اتصال الشات المفتوح
             if (chatListenerRef) { chatListenerRef.off(); chatListenerRef = null; }
+            // 2. إغلاق اتصال قائمة الشاتات (القائمة الجانبية للمدرس القديم) لمنع التداخل
+            if (serverChatsListenerRef) { serverChatsListenerRef.off(); serverChatsListenerRef = null; }
             
+            // إخفاء منطقة الشات وعرض رسالة الترحيب
             document.getElementById('chat-header').style.display = 'none';
             document.getElementById('input-area').style.display = 'none';
             document.getElementById('messages-container').innerHTML = `
@@ -247,11 +222,145 @@
                     <h2>AMG Web Support</h2>
                     <p>اختر طالباً من القائمة للبدء</p>
                 </div>`;
+                
+            // تفريغ القائمة الجانبية فوراً وإظهار رسالة تحميل
+            document.getElementById('chat-list').innerHTML = '<div style="text-align:center; padding:20px; color:#888;">جاري التحميل...</div>';
+            
             fetchChats();
+            checkBotPermission(); 
         }
 
+        function checkBotPermission() {
+            if(permissionListenerRef) permissionListenerRef.off();
+            if(currentExpireInterval) clearInterval(currentExpireInterval); 
+            
+            permissionListenerRef = db.ref(`settings/bot_access/${selectedServer}`);
+            permissionListenerRef.on('value', snap => {
+                const data = snap.val();
+                let hasPermission = false;
+                
+                if (currentExpireInterval) clearInterval(currentExpireInterval);
+
+                if (typeof data === 'boolean') {
+                    hasPermission = data;
+                } else if (data && data.active === true) {
+                    if (data.expireAt) {
+                        if (Date.now() < data.expireAt) {
+                            hasPermission = true;
+                            
+                            currentExpireInterval = setInterval(() => {
+                                if (Date.now() >= data.expireAt) {
+                                    clearInterval(currentExpireInterval);
+                                    db.ref(`settings/bot_access/${selectedServer}`).set({active: false, expireAt: null});
+                                }
+                            }, 1000);
+                            
+                        } else {
+                            hasPermission = false;
+                            db.ref(`settings/bot_access/${selectedServer}`).set({active: false, expireAt: null});
+                        }
+                    } else {
+                        hasPermission = true; 
+                    }
+                }
+
+                const botUI = document.getElementById('bot-ui-container');
+                if(hasPermission) {
+                    botUI.style.display = 'flex';
+                } else {
+                    botUI.style.display = 'none';
+                    if(isBotActive) {
+                        document.getElementById('botToggle').checked = false;
+                        toggleBot(false);
+                    }
+                }
+            });
+        }
+
+        function toggleBot(state) {
+            isBotActive = state;
+            const statusText = document.getElementById('bot-status-text');
+            if(state) {
+                if(!DEEPSEEK_API_KEY) {
+                    alert("لم يتم إعداد مفتاح API الخاص بـ DeepSeek في لوحة الإدارة بعد!");
+                    document.getElementById('botToggle').checked = false;
+                    isBotActive = false;
+                    return;
+                }
+                botActivationTime = Date.now(); 
+                processingMessages.clear(); 
+                statusText.innerText = "يعمل الآن 🟢";
+                statusText.style.color = "#27ae60";
+                
+                // إعادة تحميل الشاتات ليلتقط الرسائل الجديدة فوراً
+                filterChatsByServer(); 
+            } else {
+                botActivationTime = 0;
+                statusText.innerText = "متوقف 🔴";
+                statusText.style.color = "#e74c3c";
+            }
+        }
+
+        async function askDeepSeek(chatHistoryForApi, server, studentName, msgKey) {
+            db.ref(`support_chats/${server}/${studentName}/${msgKey}/botReplied`).set('pending');
+
+            try {
+                const apiMessages = [
+                    { 
+                        role: "system", 
+                        content: "أنت مساعد ذكي وودود لمدرس رياضيات في منصة AMG التعليمية. \n" +
+                                 "قواعد هامة جداً:\n" +
+                                 "1. اقرأ الرسائل السابقة لتفهم سياق المحادثة.\n" +
+                                 "2. أجب حصراً على 'الرسالة الأخيرة' التي أرسلها المستخدم بناءً على السياق.\n" +
+                                 "3. تحدث بطبيعية. وإذا سألك الطالب (عامل إيه، كيف حالك)، رد بلطف مثل: 'أنا بخير والحمد لله! كيف أساعدك في الرياضيات؟'\n" +
+                                 "4. أجب على أسئلة الرياضيات بدقة وفي رسالة واحدة قصيرة فقط.\n" +
+                                 "5. إذا سألك عن تخصص آخر غير الرياضيات اعتذر بلطف وأخبره أنك مخصص للرياضيات فقط.\n" +
+                                 "6. لا تقم بتجزئة إجابتك، أرسل الرد كاملاً في فقرة واحدة."
+                    },
+                    ...chatHistoryForApi 
+                ];
+
+                const response = await fetch(DEEPSEEK_URL, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${DEEPSEEK_API_KEY}`
+                    },
+                    body: JSON.stringify({
+                        model: "deepseek-chat",
+                        messages: apiMessages,
+                        temperature: 0.4, 
+                        max_tokens: 300 
+                    })
+                });
+
+                if (response.ok) {
+                    const data = await response.json();
+                    const replyText = data.choices[0].message.content;
+
+                    await db.ref(`support_chats/${server}/${studentName}`).push().set({
+                        senderId: "BOT_ADMIN",
+                        senderName: "مساعد الرياضيات",
+                        text: replyText,
+                        timestamp: Date.now(),
+                        isFromAdmin: true,
+                        isRead: true 
+                    });
+
+                    db.ref(`support_chats/${server}/${studentName}/${msgKey}/botReplied`).set(true);
+                }
+            } catch (error) {
+                console.error("DeepSeek API Error:", error);
+                processingMessages.delete(msgKey);
+            }
+        }
+
+        // 🌟 تم استخدام serverChatsListenerRef هنا لضمان الإغلاق الصحيح عند التبديل
         function fetchChats() {
-            db.ref(`support_chats/${selectedServer}`).on('value', snap => {
+            if (!selectedServer) return;
+            
+            serverChatsListenerRef = db.ref(`support_chats/${selectedServer}`);
+            serverChatsListenerRef.on('value', snap => {
                 const listDiv = document.getElementById('chat-list');
                 listDiv.innerHTML = '';
                 const students = snap.val();
@@ -259,24 +368,41 @@
                 if (students) {
                     let studentArray = [];
                     
-                    // 🌟 حساب عدد الرسائل غير المقروءة لكل طالب ومعرفة آخر رسالة للترتيب
                     for (let name in students) {
                         const msgs = students[name];
                         let unreadCount = 0;
                         let lastTimestamp = 0;
-                        
+                        let chatHistory = []; 
+
                         if (msgs) {
-                            Object.values(msgs).forEach(m => {
+                            const msgList = Object.keys(msgs).map(key => {
+                                let m = msgs[key];
+                                m.key = key;
+                                return m;
+                            }).sort((a, b) => a.timestamp - b.timestamp);
+
+                            msgList.forEach(m => {
                                 if (m.timestamp > lastTimestamp) lastTimestamp = m.timestamp;
-                                if (m.isFromAdmin === false && m.isRead === false) {
-                                    unreadCount++;
+                                if (m.isFromAdmin === false && m.isRead === false) unreadCount++;
+                                if (m.text) {
+                                    chatHistory.push({ role: m.isFromAdmin ? "assistant" : "user", content: m.text });
                                 }
                             });
+
+                            const lastMsg = msgList[msgList.length - 1];
+                            let recentHistoryForApi = chatHistory.slice(-10);
+
+                            if (isBotActive && lastMsg && lastMsg.isFromAdmin === false && !lastMsg.botReplied && lastMsg.text && lastMsg.timestamp >= botActivationTime) {
+                                if (!processingMessages.has(lastMsg.key)) {
+                                    processingMessages.add(lastMsg.key); 
+                                    db.ref(`support_chats/${selectedServer}/${name}/${lastMsg.key}/botReplied`).set('processing');
+                                    askDeepSeek(recentHistoryForApi, selectedServer, name, lastMsg.key);
+                                }
+                            }
                         }
                         studentArray.push({ name, unreadCount, lastTimestamp });
                     }
                     
-                    // 🌟 ترتيب المحادثات بحيث تظهر المحادثات التي بها رسائل جديدة أولاً
                     studentArray.sort((a, b) => b.lastTimestamp - a.lastTimestamp);
 
                     studentArray.forEach(studentObj => {
@@ -285,19 +411,11 @@
                         
                         const item = document.createElement('div');
                         item.className = 'chat-item';
-                        
-                        // تمييز الشات المفتوح حالياً بلون مختلف
-                        if (`support_chats/${selectedServer}/${name}` === currentChatPath) {
-                            item.classList.add('active-chat');
-                        }
+                        if (`support_chats/${selectedServer}/${name}` === currentChatPath) item.classList.add('active-chat');
 
                         item.onclick = () => openChat(selectedServer, name);
                         
-                        // 🌟 تجهيز دائرة الرسائل غير المقروءة الحمراء
-                        let badgeHtml = '';
-                        if (unread > 0) {
-                            badgeHtml = `<div class="unread-badge">${unread}</div>`;
-                        }
+                        let badgeHtml = unread > 0 ? `<div class="unread-badge">${unread}</div>` : '';
 
                         item.innerHTML = `
                             <div class="avatar">${name[0]}</div>
@@ -309,11 +427,12 @@
                         `;
                         listDiv.appendChild(item);
                     });
+                } else {
+                    listDiv.innerHTML = '<div style="text-align:center; padding:20px; color:#888;">لا توجد محادثات هنا حالياً.</div>';
                 }
             });
         }
 
-        // دالة تحويل الوقت لنظام 12 ساعة مع (ص / م)
         function formatTime12Hour(timestamp) {
             const date = new Date(timestamp);
             let hours = date.getHours();
@@ -326,19 +445,17 @@
         }
 
         function openChat(server, student) {
-            // 🌟 إغلاق الاتصال بالشات القديم حتى لا تتداخل الرسائل إطلاقاً!
-            if (chatListenerRef) {
-                chatListenerRef.off();
-            }
+            if (chatListenerRef) chatListenerRef.off();
 
             currentChatPath = `support_chats/${server}/${student}`;
             currentStudentName = student;
             
-            // تحديث تصميم القائمة لتمييز الشات المفتوح
+            // تلوين الشات المختار
             const allItems = document.querySelectorAll('.chat-item');
             allItems.forEach(item => item.classList.remove('active-chat'));
-            fetchChats(); // استدعاء خفيف لتحديث شكل القائمة الجانبية فوراً
-
+            // استدعاء fetchChats ليس ضرورياً هنا لأنه يعمل في الخلفية (on value)، سنكتفي بتلوين العنصر عن طريق تحديثه
+            // fetchChats(); <- إزالتها هنا تحسن الأداء لمنع التحديث الوهمي
+            
             document.getElementById('chat-header').style.display = 'flex';
             document.getElementById('input-area').style.display = 'flex';
             document.getElementById('active-name').innerText = student;
@@ -353,7 +470,6 @@
 
             toggleSidebar(false);
 
-            // 🌟 إنشاء اتصال جديد بالشات المحدد فقط
             chatListenerRef = db.ref(currentChatPath).orderByChild('timestamp');
             chatListenerRef.on('value', snap => {
                 const container = document.getElementById('messages-container');
@@ -361,12 +477,11 @@
                 const msgs = snap.val();
                 
                 if (msgs) {
-                    let updates = {}; // 🌟 مصفوفة لتحديث حالة الرسائل إلى "مقروءة"
+                    let updates = {}; 
 
                     Object.keys(msgs).forEach(key => {
                         const m = msgs[key];
                         
-                        // 🌟 إذا كانت الرسالة من الطالب وغير مقروءة، نجمعها لنقوم بتحديثها كـ "مقروءة"
                         if (m.isFromAdmin === false && m.isRead === false) {
                             updates[`${key}/isRead`] = true;
                         }
@@ -375,9 +490,11 @@
                         wrapper.className = "message-wrapper";
                         wrapper.style.flexDirection = m.isFromAdmin ? "row-reverse" : "row";
 
+                        let formattedText = m.text ? m.text.replace(/\n/g, '<br>') : '';
+
                         const msgDiv = document.createElement('div');
                         msgDiv.className = `message ${m.isFromAdmin ? 'msg-admin' : 'msg-student'}`;
-                        let content = m.text ? `<div style="margin-bottom: 2px;">${m.text}</div>` : '';
+                        let content = formattedText ? `<div style="margin-bottom: 4px;">${formattedText}</div>` : '';
                         if (m.imageUrl) content += `<img src="${m.imageUrl}" class="msg-img" onclick="window.open('${m.imageUrl}')">`;
                         
                         const formattedTime = formatTime12Hour(m.timestamp);
@@ -385,6 +502,7 @@
 
                         const delBtn = document.createElement('i');
                         delBtn.className = "fas fa-trash-alt delete-btn-icon";
+                        // 🌟 المسح بأيقونة سلة المهملات وتأكيد
                         delBtn.onclick = (e) => { e.stopPropagation(); deleteMessage(key); };
 
                         wrapper.appendChild(msgDiv);
@@ -394,7 +512,6 @@
 
                     container.scrollTop = container.scrollHeight;
 
-                    // 🌟 تحديث الداتا بيز بأننا قرأنا الرسائل (مما سيؤدي لاختفاء الدايرة الحمراء)
                     if (Object.keys(updates).length > 0) {
                         db.ref(currentChatPath).update(updates);
                     }
@@ -403,7 +520,8 @@
         }
 
         async function deleteMessage(msgId) {
-            if (confirm("حذف الرسالة نهائياً؟")) {
+            // 🌟 رسالة التأكيد للحذف
+            if (confirm("هل أنت متأكد من حذف هذه الرسالة نهائياً؟")) {
                 const snap = await db.ref(`${currentChatPath}/${msgId}`).get();
                 if (snap.exists() && snap.val().imageStoragePath) {
                     try { await storage.ref(snap.val().imageStoragePath).delete(); } catch(e) {}
@@ -413,7 +531,8 @@
         }
 
         async function deleteFullChat() {
-            if (confirm(`مسح المحادثة مع ${currentStudentName} وجميع صورها؟`)) {
+            // 🌟 رسالة التأكيد لحذف المحادثة
+            if (confirm(`هل أنت متأكد من مسح المحادثة بالكامل مع ${currentStudentName}؟`)) {
                 const snap = await db.ref(currentChatPath).get();
                 if (snap.exists()) {
                     const msgs = snap.val();
@@ -443,7 +562,7 @@
                 text: input.value.trim(),
                 timestamp: Date.now(),
                 isFromAdmin: true,
-                isRead: true // رسائل الأدمن تعتبر مقروءة افتراضياً حتى لا تؤثر على العداد
+                isRead: true 
             });
             input.value = '';
             input.focus();
