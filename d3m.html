@@ -144,18 +144,16 @@
         let botActivationTime = 0; 
         let processingMessages = new Set(); 
 
+        // 🌟 استدعاء أو إنشاء الكاش من المتصفح (لتوفير التوكنز والسرعة)
+        let aiCache = JSON.parse(localStorage.getItem('amg_bot_cache')) || {};
+
         let selectedServer = "";
         let currentChatPath = "";
         let currentStudentName = "";
-        
-        // 🌟 متغيرات التحكم في اتصالات الداتا بيز (لمنع التداخل)
-        let chatListenerRef = null;       // اتصال الشات المفتوح حالياً
-        let serverChatsListenerRef = null; // اتصال القائمة الجانبية (الشاتات) للمدرس الحالي
-        let permissionListenerRef = null; // اتصال صلاحيات البوت
-        
+        let chatListenerRef = null;
+        let permissionListenerRef = null;
         let currentExpireInterval = null; 
 
-        // جلب الـ API Key بشكل تلقائي
         db.ref('settings/deepseek_api_key').on('value', snap => {
             DEEPSEEK_API_KEY = snap.val() || "";
         });
@@ -181,39 +179,28 @@
             }
         }
 
-        // 🌟 تعديل جلب السيرفرات باستخدام once لمنع عمل Refresh مستمر للـ dropdown
         function loadServers() {
             db.ref('support_chats').once('value', snap => {
                 initPanel(Object.keys(snap.val() || {}));
             });
         }
 
-        // 🌟 تهيئة السيرفرات والتأكد من الحفاظ على السيرفر المختار
         function initPanel(servers) {
             const select = document.getElementById('server-select');
             select.innerHTML = servers.map(s => `<option value="${s}">${s}</option>`).join('');
-            
-            // إذا لم يكن هناك سيرفر محدد، نختار الأول ونستدعي فلاتر الشات
             if (!selectedServer || !servers.includes(selectedServer)) { 
                 selectedServer = servers[0]; 
             }
             select.value = selectedServer;
-            
             filterChatsByServer(); 
         }
 
-        // 🌟 فلترة الشات عند تغيير المدرس (إغلاق نظيف للاتصالات القديمة)
         function filterChatsByServer() {
             selectedServer = document.getElementById('server-select').value;
             currentChatPath = "";
             currentStudentName = "";
             
-            // 1. إغلاق اتصال الشات المفتوح
             if (chatListenerRef) { chatListenerRef.off(); chatListenerRef = null; }
-            // 2. إغلاق اتصال قائمة الشاتات (القائمة الجانبية للمدرس القديم) لمنع التداخل
-            if (serverChatsListenerRef) { serverChatsListenerRef.off(); serverChatsListenerRef = null; }
-            
-            // إخفاء منطقة الشات وعرض رسالة الترحيب
             document.getElementById('chat-header').style.display = 'none';
             document.getElementById('input-area').style.display = 'none';
             document.getElementById('messages-container').innerHTML = `
@@ -222,8 +209,6 @@
                     <h2>AMG Web Support</h2>
                     <p>اختر طالباً من القائمة للبدء</p>
                 </div>`;
-                
-            // تفريغ القائمة الجانبية فوراً وإظهار رسالة تحميل
             document.getElementById('chat-list').innerHTML = '<div style="text-align:center; padding:20px; color:#888;">جاري التحميل...</div>';
             
             fetchChats();
@@ -247,14 +232,12 @@
                     if (data.expireAt) {
                         if (Date.now() < data.expireAt) {
                             hasPermission = true;
-                            
                             currentExpireInterval = setInterval(() => {
                                 if (Date.now() >= data.expireAt) {
                                     clearInterval(currentExpireInterval);
                                     db.ref(`settings/bot_access/${selectedServer}`).set({active: false, expireAt: null});
                                 }
                             }, 1000);
-                            
                         } else {
                             hasPermission = false;
                             db.ref(`settings/bot_access/${selectedServer}`).set({active: false, expireAt: null});
@@ -291,8 +274,6 @@
                 processingMessages.clear(); 
                 statusText.innerText = "يعمل الآن 🟢";
                 statusText.style.color = "#27ae60";
-                
-                // إعادة تحميل الشاتات ليلتقط الرسائل الجديدة فوراً
                 filterChatsByServer(); 
             } else {
                 botActivationTime = 0;
@@ -320,6 +301,28 @@
                     ...chatHistoryForApi 
                 ];
 
+                // 🌟 إنشاء مفتاح كاش مميز بناءً على الرسائل للتحقق منه
+                const cacheKey = JSON.stringify(apiMessages);
+
+                // 🌟 التحقق من الذاكرة (الكاش) قبل إرسال الطلب لـ DeepSeek
+                if (aiCache[cacheKey]) {
+                    console.log("⚡ تم جلب الرد من الذاكرة (بدون استهلاك توكنز)");
+                    const cachedReply = aiCache[cacheKey];
+
+                    await db.ref(`support_chats/${server}/${studentName}`).push().set({
+                        senderId: "BOT_ADMIN",
+                        senderName: "مساعد الرياضيات",
+                        text: cachedReply,
+                        timestamp: Date.now(),
+                        isFromAdmin: true,
+                        isRead: true 
+                    });
+
+                    db.ref(`support_chats/${server}/${studentName}/${msgKey}/botReplied`).set(true);
+                    return; // إنهاء الدالة فوراً بنجاح
+                }
+
+                // 🌟 لو لم يكن في الذاكرة، يتم طلب API
                 const response = await fetch(DEEPSEEK_URL, {
                     method: 'POST',
                     headers: {
@@ -338,6 +341,10 @@
                     const data = await response.json();
                     const replyText = data.choices[0].message.content;
 
+                    // 🌟 حفظ الرد في الكاش المحلي للمرات القادمة
+                    aiCache[cacheKey] = replyText;
+                    localStorage.setItem('amg_bot_cache', JSON.stringify(aiCache));
+
                     await db.ref(`support_chats/${server}/${studentName}`).push().set({
                         senderId: "BOT_ADMIN",
                         senderName: "مساعد الرياضيات",
@@ -355,10 +362,12 @@
             }
         }
 
-        // 🌟 تم استخدام serverChatsListenerRef هنا لضمان الإغلاق الصحيح عند التبديل
+        let serverChatsListenerRef = null;
         function fetchChats() {
             if (!selectedServer) return;
             
+            if (serverChatsListenerRef) { serverChatsListenerRef.off(); }
+
             serverChatsListenerRef = db.ref(`support_chats/${selectedServer}`);
             serverChatsListenerRef.on('value', snap => {
                 const listDiv = document.getElementById('chat-list');
@@ -450,11 +459,8 @@
             currentChatPath = `support_chats/${server}/${student}`;
             currentStudentName = student;
             
-            // تلوين الشات المختار
             const allItems = document.querySelectorAll('.chat-item');
             allItems.forEach(item => item.classList.remove('active-chat'));
-            // استدعاء fetchChats ليس ضرورياً هنا لأنه يعمل في الخلفية (on value)، سنكتفي بتلوين العنصر عن طريق تحديثه
-            // fetchChats(); <- إزالتها هنا تحسن الأداء لمنع التحديث الوهمي
             
             document.getElementById('chat-header').style.display = 'flex';
             document.getElementById('input-area').style.display = 'flex';
@@ -502,7 +508,6 @@
 
                         const delBtn = document.createElement('i');
                         delBtn.className = "fas fa-trash-alt delete-btn-icon";
-                        // 🌟 المسح بأيقونة سلة المهملات وتأكيد
                         delBtn.onclick = (e) => { e.stopPropagation(); deleteMessage(key); };
 
                         wrapper.appendChild(msgDiv);
@@ -520,7 +525,6 @@
         }
 
         async function deleteMessage(msgId) {
-            // 🌟 رسالة التأكيد للحذف
             if (confirm("هل أنت متأكد من حذف هذه الرسالة نهائياً؟")) {
                 const snap = await db.ref(`${currentChatPath}/${msgId}`).get();
                 if (snap.exists() && snap.val().imageStoragePath) {
@@ -531,7 +535,6 @@
         }
 
         async function deleteFullChat() {
-            // 🌟 رسالة التأكيد لحذف المحادثة
             if (confirm(`هل أنت متأكد من مسح المحادثة بالكامل مع ${currentStudentName}؟`)) {
                 const snap = await db.ref(currentChatPath).get();
                 if (snap.exists()) {
