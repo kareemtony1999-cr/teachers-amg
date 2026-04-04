@@ -636,7 +636,7 @@
                     return globalCacheSnap.val(); // العودة النظيفة والسريعة بدون استهلاك
                 }
 
-                let finalUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2-flash-lite:generateContent?key=${activeGeminiKey}`;
+                let finalUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2-flash:generateContent?key=${activeGeminiKey}`;
                 let res = await fetch(finalUrl, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
