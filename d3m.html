@@ -838,7 +838,7 @@
 
                                         // 🌟 التحقق من الحد الأقصى للطالب يومياً 🌟
                                         let customLimitSnap = await db.ref(`settings/custom_gemini_limits/${name}`).get();
-                                        let userLimit = customLimitSnap.exists() ? parseInt(customLimitSnap.val()) : 5;
+                                        let userLimit = customLimitSnap.exists() ? parseInt(customLimitSnap.val()) : 3;
 
                                         let limitSnap = await db.ref(`settings/gemini_limits_${todayStr}/users/${name}`).get();
                                         if (limitSnap.exists() && limitSnap.val() >= userLimit) {
