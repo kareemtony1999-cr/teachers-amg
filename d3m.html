@@ -252,7 +252,6 @@
             margin-top: 5px;
             text-align: left;
             direction: ltr;
-            display: inline-block;
             float: left;
         }
 
@@ -427,8 +426,9 @@
 
         // 🌟 المتغيرات الجديدة الخاصة بالـ Failover
         let PRIMARY_KEY = "";
-        let GEMINI_KEY = "";
+        let VISION_KEY = "";
         let BACKUP_KEY = "";
+        let GEMINI_KEY = "";
 
         let isBotActive = false;
         let botActivationTime = 0;
@@ -444,8 +444,9 @@
 
         // جلب المفاتيح
         db.ref('settings/primary_api_key').on('value', snap => { PRIMARY_KEY = snap.val() || ""; });
-        db.ref('settings/gemini_api_key').on('value', snap => { GEMINI_KEY = snap.val() || ""; });
+        db.ref('settings/vision_api_key').on('value', snap => { VISION_KEY = snap.val() || ""; });
         db.ref('settings/backup_api_key').on('value', snap => { BACKUP_KEY = snap.val() || ""; });
+        db.ref('settings/gemini_api_key').on('value', snap => { GEMINI_KEY = snap.val() || ""; });
 
         auth.onAuthStateChanged(user => {
             if (!user) window.location.href = 'index.html';
@@ -553,7 +554,7 @@
             isBotActive = state;
             const statusText = document.getElementById('bot-status-text');
             if (state) {
-                if (!PRIMARY_KEY && !BACKUP_KEY && !GEMINI_KEY) {
+                if (!PRIMARY_KEY && !BACKUP_KEY && !VISION_KEY) {
                     alert("لم يتم إعداد مفاتيح السيرفرات في لوحة الإدارة بعد!");
                     document.getElementById('botToggle').checked = false;
                     isBotActive = false;
@@ -579,113 +580,122 @@
 
         async function fetchImageAsBase64(url) {
             if (!url) return null;
-            try {
-                // استخدام بروكسي لتجاوز الحماية وتقرأ الصورة بنجاح بدون تعديل الفايربيز
-                const proxyUrl = `https://api.allorigins.win/raw?url=${encodeURIComponent(url)}`;
-                const response = await fetch(proxyUrl);
-                if (!response.ok) throw new Error("Network error");
-                const blob = await response.blob();
-                return new Promise((resolve, reject) => {
-                    const reader = new FileReader();
-                    reader.onloadend = () => {
-                        resolve({
-                            mimeType: blob.type || 'image/jpeg',
-                            data: reader.result.split(',')[1]
-                        });
-                    };
-                    reader.onerror = reject;
-                    reader.readAsDataURL(blob);
-                });
-            } catch (e) {
-                console.warn("⚠️ فشل جلب الصورة برمجياً:", e);
-                return null;
+            const urlsToTry = [
+                url, // المحاولة المباشرة أولاً
+                `https://api.allorigins.win/raw?url=${encodeURIComponent(url)}`,
+                `https://corsproxy.io/?${encodeURIComponent(url)}`
+            ];
+
+            for (let targetUrl of urlsToTry) {
+                try {
+                    const response = await fetch(targetUrl);
+                    if (!response.ok) continue;
+                    const blob = await response.blob();
+
+                    // حماية من بروكسيات الأخطاء التي ترجع HTML
+                    if (blob.type.includes('text/html')) continue;
+
+                    return await new Promise((resolve, reject) => {
+                        const reader = new FileReader();
+                        reader.onloadend = () => {
+                            resolve({
+                                mimeType: blob.type.includes('image/') ? blob.type : 'image/jpeg',
+                                data: reader.result.split(',')[1]
+                            });
+                        };
+                        reader.onerror = reject;
+                        reader.readAsDataURL(blob);
+                    });
+                } catch (e) {
+                    console.warn(`Fetch failed for ${targetUrl}:`, e);
+                }
             }
+            return null;
         }
 
-        async function requestGemini(geminiKey, history) {
-            const contents = [];
-            let systemText = "";
+        async function hashBase64(base64Str) {
+            const encoder = new TextEncoder();
+            const data = encoder.encode(base64Str);
+            const hashBuffer = await crypto.subtle.digest('SHA-256', data);
+            const hashArray = Array.from(new Uint8Array(hashBuffer));
+            return hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
+        }
 
-            for (let msg of history) {
-                if (msg.role === 'system') {
-                    systemText = msg.content;
-                    continue;
+        async function extractImageContentWithGemini(imageUrl, todayStr, studentName) {
+            const activeGeminiKey = GEMINI_KEY || VISION_KEY;
+            if (!activeGeminiKey) return "[فشل الاستخراج: لا يوجد مفتاح API جيميناي]";
+            try {
+                const imgData = await fetchImageAsBase64(imageUrl);
+                if (!imgData) return "[فشل الاستخراج: لم يتم تحميل الصورة]";
+
+                // 🌟 نظام الكاش العالمي: التحقق من بصمة الصورة أولاً 🌟
+                const imageHash = await hashBase64(imgData.data);
+                const globalCacheSnap = await db.ref(`settings/global_image_cache/${imageHash}`).get();
+                if (globalCacheSnap.exists()) {
+                    console.log("Global Hash Match! Loaded from Cache.");
+                    return globalCacheSnap.val(); // العودة النظيفة والسريعة بدون استهلاك
                 }
 
-                const parts = [];
-                // النص
-                if (msg.content) parts.push({ text: msg.content });
+                let finalUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${activeGeminiKey}`;
+                let res = await fetch(finalUrl, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        systemInstruction: { parts: [{ text: "أنت محلل صوري لبرنامج شرح رياضيات. استخرج ووصف بدقة فائقة كافة المعادلات والمحتويات والأرقام بترتيبها الموجود في الصورة، لكي يقرأها موديل ذكاء اصطناعي آخر لحل المسألة." }] },
+                        contents: [{ role: "user", parts: [{ inlineData: { mimeType: imgData.mimeType || "image/jpeg", data: imgData.data } }] }]
+                    })
+                });
 
-                // الصورة
-                if (msg.imageUrl) {
-                    const imgData = await fetchImageAsBase64(msg.imageUrl);
-                    if (imgData) {
-                        parts.push({ inlineData: imgData });
+                if (res.ok) {
+                    let data = await res.json();
+                    let textResult = data.candidates[0].content.parts[0].text;
+
+                    // تسجيل الفاتورة والاستهلاك فقط للصور الجديدة الحقيقية
+                    let inputTokens = data.usageMetadata ? data.usageMetadata.promptTokenCount || 0 : 0;
+                    let outputTokens = data.usageMetadata ? data.usageMetadata.candidatesTokenCount || 0 : 0;
+                    db.ref(`settings/gemini_limits_${todayStr}/total`).set(firebase.database.ServerValue.increment(1));
+                    if (inputTokens > 0) db.ref(`settings/gemini_limits_${todayStr}/tokens_input`).set(firebase.database.ServerValue.increment(inputTokens));
+                    if (outputTokens > 0) db.ref(`settings/gemini_limits_${todayStr}/tokens_output`).set(firebase.database.ServerValue.increment(outputTokens));
+                    db.ref(`settings/gemini_limits_${todayStr}/users/${studentName}`).set(firebase.database.ServerValue.increment(1));
+
+                    // 🌟 حفظ النتيجة في الكاش العالمي لتوفير استهلاك الطلاب في المستقبل 🌟
+                    await db.ref(`settings/global_image_cache/${imageHash}`).set(textResult);
+
+                    return textResult;
+                }
+            } catch (e) {
+                console.error("Gemini Extraction Error", e);
+            }
+            return "[عذراً، حدث خطأ أثناء قراءة الصورة وتم تخطيها]";
+        }
+
+        async function processAIRequest(messagesArray, server, studentName, hasImage) {
+            // -- تحويل كل شيء إلى كاش نصي فقط للنماذج السريعة --
+            let processedTextMessages = [];
+            for (let m of messagesArray) {
+                let content = m.content || "";
+                if (m.imageUrl) {
+                    if (m.imageAnalysis) {
+                        content += `\n\n[محتوى الصورة المرفقة الذي قرأه جيميناي ومطلوب منك فهمه للحل: \n${m.imageAnalysis}]`;
+                    } else {
+                        content += "\n[صورة مرفقة لم يتم تحليلها]";
                     }
                 }
 
-                if (parts.length > 0) {
-                    contents.push({
-                        role: msg.role === 'user' ? 'user' : 'model',
-                        parts: parts
+                if (content.trim() !== "") {
+                    processedTextMessages.push({
+                        role: m.role === 'system' ? 'system' : (m.role === 'model' || m.role === 'assistant' ? 'assistant' : 'user'),
+                        content: content
                     });
                 }
             }
 
-            if (contents.length === 0) throw new Error("Empty contents");
-
-            const body = {
-                contents: contents,
-                generationConfig: { temperature: 0.4, maxOutputTokens: 400 }
-            };
-
-            if (systemText) {
-                body.systemInstruction = { parts: [{ text: systemText }] };
-            }
-
-            const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${geminiKey}`;
-            const res = await fetch(url, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(body)
-            });
-
-            if (res.ok) {
-                const data = await res.json();
-                if (data.candidates && data.candidates[0].content && data.candidates[0].content.parts.length > 0) {
-                    return data.candidates[0].content.parts[0].text;
-                }
-            }
-            throw new Error("Gemini API request failed");
-        }
-
-        async function processAIRequest(messagesArray, hasImage) {
-            // مسار الصور: موديل جيميناي فقط
-            if (hasImage) {
-                if (GEMINI_KEY) {
-                    try {
-                        const rep = await requestGemini(GEMINI_KEY, messagesArray);
-                        if (rep) return rep;
-                    } catch (e) {
-                        console.error("Gemini failed for image", e);
-                    }
-                }
-                return null;
-            }
-
-            // مسار النصوص: جروك أولاً، جيمناي ثانياً، ديب سيك ثالثاً
-            const openaiMessages = messagesArray.map(m => ({
-                role: m.role === 'system' ? 'system' : (m.role === 'model' || m.role === 'assistant' ? 'assistant' : 'user'),
-                content: m.content || ""
-            }));
-
-            // 1. Groq (Primary)
-            if (PRIMARY_KEY) {
+            if (PRIMARY_KEY && processedTextMessages.length > 1) {
                 try {
                     const res1 = await fetch(getPUrl(), {
                         method: 'POST',
                         headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${PRIMARY_KEY}` },
-                        body: JSON.stringify({ model: getPMod(), messages: openaiMessages, temperature: 0.4, max_tokens: 400 })
+                        body: JSON.stringify({ model: getPMod(), messages: processedTextMessages, temperature: 0.4 })
                     });
                     if (res1.ok) {
                         const d1 = await res1.json();
@@ -694,21 +704,12 @@
                 } catch (e) { console.warn("Primary API failed."); }
             }
 
-            // 2. Gemini (Fallback 1)
-            if (GEMINI_KEY) {
-                try {
-                    const rep = await requestGemini(GEMINI_KEY, messagesArray);
-                    if (rep) return rep;
-                } catch (e) { console.warn("Gemini API failed."); }
-            }
-
-            // 3. DeepSeek (Fallback 2)
-            if (BACKUP_KEY) {
+            if (BACKUP_KEY && processedTextMessages.length > 1) {
                 try {
                     const res2 = await fetch(getBUrl(), {
                         method: 'POST',
                         headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${BACKUP_KEY}` },
-                        body: JSON.stringify({ model: getBMod(), messages: openaiMessages, temperature: 0.4, max_tokens: 400 })
+                        body: JSON.stringify({ model: getBMod(), messages: processedTextMessages, temperature: 0.4 })
                     });
                     if (res2.ok) {
                         const d2 = await res2.json();
@@ -741,28 +742,30 @@
 
                 const cacheKey = JSON.stringify(apiMessages);
 
-                // الكاش
+                // الكاش (تم تعطيله لتجنب استدعاء إجابات خاطئة قديمة من الذاكرة)
+                /*
                 if (aiCache[cacheKey]) {
                     const cachedReply = aiCache[cacheKey];
                     await saveBotReply(cachedReply, server, studentName, msgKey);
                     return;
                 }
+                */
 
                 // طلب الذكاء الاصطناعي بنظام التحويل الذكي (Failover)
-                const replyText = await processAIRequest(apiMessages, hasImage);
+                const replyText = await processAIRequest(apiMessages, server, studentName, hasImage);
 
                 if (replyText) {
                     aiCache[cacheKey] = replyText;
                     localStorage.setItem('amg_bot_cache', JSON.stringify(aiCache));
                     await saveBotReply(replyText, server, studentName, msgKey);
                 } else {
-                    // فشل السيرفرات بالكامل (نعيد العلامة لكي يحاول لاحقاً)
-                    db.ref(`support_chats/${server}/${studentName}/${msgKey}/botReplied`).remove();
+                    // 🌟 الحماية من الـ Loop: تعيين كفشل بدلاً من الحذف لمنع إعادة المحاولة اللانهائية
+                    db.ref(`support_chats/${server}/${studentName}/${msgKey}/botReplied`).set('failed');
                     processingMessages.delete(msgKey);
                 }
 
             } catch (error) {
-                db.ref(`support_chats/${server}/${studentName}/${msgKey}/botReplied`).remove();
+                db.ref(`support_chats/${server}/${studentName}/${msgKey}/botReplied`).set('failed');
                 processingMessages.delete(msgKey);
             }
         }
@@ -785,7 +788,7 @@
             if (serverChatsListenerRef) { serverChatsListenerRef.off(); }
 
             serverChatsListenerRef = db.ref(`support_chats/${selectedServer}`);
-            serverChatsListenerRef.on('value', snap => {
+            serverChatsListenerRef.on('value', async snap => {
                 const listDiv = document.getElementById('chat-list');
                 listDiv.innerHTML = '';
                 const students = snap.val();
@@ -811,9 +814,12 @@
                                 if (m.isFromAdmin === false && m.isRead === false) unreadCount++;
                                 if (m.text || m.imageUrl) {
                                     chatHistory.push({
+                                        key: m.key,
                                         role: m.isFromAdmin ? "assistant" : "user",
-                                        content: m.text || (m.imageUrl ? "" : ""),
-                                        imageUrl: m.imageUrl
+                                        content: m.text || "",
+                                        imageUrl: m.imageUrl,
+                                        imageAnalysis: m.imageAnalysis || null,
+                                        botReplied: m.botReplied || false
                                     });
                                 }
                             });
@@ -825,8 +831,52 @@
                             if (isBotActive && lastMsg && lastMsg.isFromAdmin === false && !lastMsg.botReplied && (lastMsg.text || lastMsg.imageUrl) && lastMsg.timestamp >= botActivationTime) {
                                 if (!processingMessages.has(lastMsg.key)) {
                                     processingMessages.add(lastMsg.key);
+
+                                    // ✨ الكاش السحري: قراءة أية صور جديدة لمرة واحدة وتخزينها
+                                    if (lastMsg.imageUrl && !lastMsg.imageAnalysis) {
+                                        const todayStr = new Date().toISOString().split('T')[0];
+
+                                        // 🌟 التحقق من الحد الأقصى للطالب يومياً 🌟
+                                        let customLimitSnap = await db.ref(`settings/custom_gemini_limits/${name}`).get();
+                                        let userLimit = customLimitSnap.exists() ? parseInt(customLimitSnap.val()) : 5;
+
+                                        let limitSnap = await db.ref(`settings/gemini_limits_${todayStr}/users/${name}`).get();
+                                        if (limitSnap.exists() && limitSnap.val() >= userLimit) {
+                                            const exceedMsg = `عذراً يا بطل! 🛑 لقد استنفذت باقتك اليومية (${userLimit} صور يومياً). يمكنك كتابة سؤالك وسأجيبك فوراً، أو عد غداً لإرسال المزيد من الصور.`;
+                                            await db.ref(`support_chats/${selectedServer}/${name}`).push().set({
+                                                senderId: "BOT_ADMIN",
+                                                senderName: "مساعد الرياضيات",
+                                                text: exceedMsg,
+                                                timestamp: Date.now(),
+                                                isFromAdmin: true,
+                                                isRead: true
+                                            });
+                                            db.ref(`support_chats/${selectedServer}/${name}/${lastMsg.key}/botReplied`).set(true);
+                                            db.ref(`support_chats/${selectedServer}/${name}/${lastMsg.key}/imageAnalysis`).set("[صورة لم يتم تحليلها لانتهاء الباقة]");
+                                            processingMessages.delete(lastMsg.key);
+                                            continue; // تخطي وتكملة باقي الطلاب
+                                        }
+
+                                        db.ref(`support_chats/${selectedServer}/${name}/${lastMsg.key}/botReplied`).set('processing_image');
+                                        const extractedAnalysis = await extractImageContentWithGemini(lastMsg.imageUrl, todayStr, name);
+
+                                        // تحديث الرسالة والكاش
+                                        lastMsg.imageAnalysis = extractedAnalysis;
+                                        chatHistory[chatHistory.length - 1].imageAnalysis = extractedAnalysis;
+                                        recentHistoryForApi = chatHistory.slice(-10); // إعادة توليد المصفوقة الحديثة
+                                        await db.ref(`support_chats/${selectedServer}/${name}/${lastMsg.key}/imageAnalysis`).set(extractedAnalysis);
+                                    }
+
                                     db.ref(`support_chats/${selectedServer}/${name}/${lastMsg.key}/botReplied`).set('processing');
-                                    askDeepSeek(recentHistoryForApi, selectedServer, name, lastMsg.key, hasImage);
+
+                                    const hasText = lastMsg.text && lastMsg.text.trim().length > 0;
+                                    if (!hasText && lastMsg.imageUrl) {
+                                        // تم حل الصورة وحفظها كمرجع، الآن نتنتظر سؤاله
+                                        db.ref(`support_chats/${selectedServer}/${name}/${lastMsg.key}/botReplied`).set(true);
+                                        processingMessages.delete(lastMsg.key);
+                                    } else {
+                                        askDeepSeek(recentHistoryForApi, selectedServer, name, lastMsg.key, hasImage);
+                                    }
                                 }
                             }
                         }
