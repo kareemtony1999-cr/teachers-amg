@@ -219,6 +219,21 @@
         }
         .progress-status { color: var(--text-secondary); font-size: 15px; margin-top: 10px; }
 
+        /* Toggle Switch */
+        .switch { position: relative; display: inline-block; }
+        .switch input { opacity: 0; width: 0; height: 0; }
+        .slider {
+            position: absolute; cursor: pointer; top: 0; left: 0; right: 0; bottom: 0;
+            background-color: #ccc; transition: .3s; border-radius: 26px;
+        }
+        .slider:before {
+            position: absolute; content: ""; height: 20px; width: 20px;
+            left: 3px; bottom: 3px; background-color: white;
+            transition: .3s; border-radius: 50%;
+        }
+        .switch input:checked + .slider { background-color: var(--success-color); }
+        .switch input:checked + .slider:before { transform: translateX(24px); }
+
     </style>
 </head>
 <body>
@@ -264,18 +279,27 @@
                 </div>
 
                 <div class="file-grid">
-                    <div class="file-upload-wrapper" onclick="document.getElementById('imageFile').click()">
+                    <div class="file-upload-wrapper">
                         <input type="file" id="imageFile" accept="image/*">
                         <i class="fas fa-image file-icon"></i>
                         <span class="file-label">إضافة صورة (اختياري)</span>
                         <span id="imageFileName" class="file-name">لم يتم اختيار ملف</span>
                     </div>
                     
-                    <div class="file-upload-wrapper" onclick="document.getElementById('pdfFile').click()">
+                    <div class="file-upload-wrapper">
                         <input type="file" id="pdfFile" accept="application/pdf">
                         <i class="fas fa-file-pdf file-icon" style="color: #EF4444;"></i>
                         <span class="file-label" style="color: #EF4444;">ملف PDF</span>
                         <span id="pdfFileName" class="file-name">لم يتم اختيار ملف</span>
+                    </div>
+
+                    <div style="grid-column: span 2; display: flex; align-items: center; justify-content: center; gap: 10px; margin-top: 5px; background: rgba(0,0,0,0.03); padding: 10px; border-radius: 8px;">
+                        <i class="fas fa-lock" id="pdfLockIcon" style="color: #EF4444; font-size: 20px;"></i>
+                        <label class="switch" style="width: 50px; height: 26px; margin: 0;">
+                            <input type="checkbox" id="allowPdfDownload" onchange="document.getElementById('pdfLockIcon').className = this.checked ? 'fas fa-lock-open' : 'fas fa-lock'; document.getElementById('pdfLockIcon').style.color = this.checked ? '#10B981' : '#EF4444';">
+                            <span class="slider round" style="border-radius: 26px;"></span>
+                        </label>
+                        <span style="font-weight: 600; font-size: 15px; color: var(--text-primary);">السماح للطلاب بتحميل ملف الـ PDF</span>
                     </div>
                 </div>
 
@@ -494,6 +518,8 @@
                     post: content,
                     images: imageUrls,
                     pdf: pdfUrl,
+                    pdfName: pdf ? pdf.name : null,
+                    allowPdfDownload: document.getElementById('allowPdfDownload').checked,
                     timestamp: new Date().toISOString(),
                     likes: []
                 };
@@ -554,8 +580,28 @@
                     if(post.images && post.images.length > 0) {
                           metaHtml += `<span class="badge badge-img"><i class="fas fa-images"></i> ${post.images.length} صور</span>`;
                     }
+                    
+                    let pdfControlHtml = '';
                     if(post.pdf) {
-                        metaHtml += `<span class="badge badge-pdf"><i class="fas fa-file-pdf"></i> ملف PDF</span>`;
+                        const displayName = post.pdfName || (function(u){
+                            try {
+                                const path = decodeURIComponent(new URL(u).pathname);
+                                return path.split('/').pop().split('_').slice(1).join('_') || "ملف PDF";
+                            } catch(e) { return "ملف PDF"; }
+                        })(post.pdf);
+
+                        metaHtml += `<span class="badge badge-pdf"><i class="fas fa-file-pdf"></i> ${displayName}</span>`;
+                        
+                        pdfControlHtml = `
+                            <div style="display:flex; align-items:center; gap:8px; font-size:13px; background:rgba(0,0,0,0.03); padding:5px 12px; border-radius:20px;">
+                                <i class="${post.allowPdfDownload ? 'fas fa-lock-open' : 'fas fa-lock'}" style="color:${post.allowPdfDownload ? '#10B981' : '#EF4444'}"></i>
+                                <span style="font-weight:600;">تحميل الـ PDF:</span>
+                                <label class="switch" style="width: 44px; height: 22px;">
+                                    <input type="checkbox" ${post.allowPdfDownload ? 'checked' : ''} onchange="togglePdfDownload('${server}', '${post.key}', this.checked)">
+                                    <span class="slider" style="border-radius:22px;"></span>
+                                </label>
+                            </div>
+                        `;
                     }
 
                     let userDisplay = post.user ? post.user.split('@')[0] : 'Anonymous';
@@ -569,7 +615,8 @@
                         </div>
                         <div class="post-content">${post.post || '<span style="color:var(--text-secondary); font-style:italic;">بدون نص</span>'}</div>
                         <div class="post-meta">${metaHtml}</div>
-                        <div style="display:flex; justify-content:flex-end;">
+                        <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:15px;">
+                            ${pdfControlHtml}
                             <button class="btn-sm-danger" onclick="deletePost('${server}', '${post.key}')">
                                 <i class="fas fa-trash-alt"></i> حذف البوست
                             </button>
@@ -589,6 +636,18 @@
                 loadMyPosts();
             } catch(e) {
                 alert('خطأ في الحذف: ' + e.message);
+            }
+        }
+
+        window.togglePdfDownload = async function(server, key, newVal) {
+            try {
+                await db.ref(`posts/${server}/${key}`).update({
+                    allowPdfDownload: newVal
+                });
+                // No alert needed for a toggle, just silent update or small toast
+                loadMyPosts(); // Refresh UI to update icons
+            } catch(e) {
+                alert('خطأ في تحديث صلاحية التحميل: ' + e.message);
             }
         }
     </script>

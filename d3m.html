@@ -252,6 +252,7 @@
             margin-top: 5px;
             text-align: left;
             direction: ltr;
+            display: inline-block;
             float: left;
         }
 
@@ -359,18 +360,18 @@
                 <span>المحادثات</span>
             </div>
 
-            <div id="bot-ui-container"
-                style="display: none; padding: 12px 15px; background: #eaf4fa; border-bottom: 1px solid #ddd; justify-content: space-between; align-items: center;">
-                <div>
-                    <i class="fas fa-robot" style="color: var(--primary); font-size: 18px;"></i>
-                    <span style="font-weight: 600; margin-right: 8px;">مساعد الرياضيات</span>
-                    <div id="bot-status-text" style="font-size: 12px; color: #e74c3c; margin-top: 4px;">متوقف 🔴</div>
-                </div>
-                <label class="switch">
-                    <input type="checkbox" id="botToggle" onchange="toggleBot(this.checked)">
-                    <span class="slider round"></span>
-                </label>
-            </div>
+<div id="bot-ui-container" style="display: none; padding: 15px; background: #fdfefe; border-bottom: 2px solid #eee; flex-direction: column; gap: 12px;">
+    <div style="display: flex; align-items: center; gap: 8px; color: var(--primary);">
+        <i class="fas fa-user-edit" style="font-size: 16px;"></i>
+        <span style="font-weight: bold; font-size: 14px;">إعدادات المدرس والمادة</span>
+    </div>
+    
+    <div id="bot-settings-form" style="display: flex; flex-direction: column; gap: 10px;">
+        <input type="text" id="bot-name-input" placeholder="اسم المدرس (يظهر للطالب)" style="padding: 8px 12px; border: 1px solid #ddd; border-radius: 6px; font-size: 13px; outline: none;">
+        <input type="text" id="bot-subject-input" placeholder="المادة الدراسية (مثال: كيمياء)" style="padding: 8px 12px; border: 1px solid #ddd; border-radius: 6px; font-size: 13px; outline: none;">
+        <button onclick="saveBotIdentity()" style="background: var(--primary); color: white; border: none; padding: 10px; border-radius: 6px; cursor: pointer; font-size: 13px; font-weight: bold; transition: 0.3s;">حفظ البيانات 💾</button>
+    </div>
+</div>
 
             <div class="chat-list" id="chat-list"></div>
         </div>
@@ -426,9 +427,8 @@
 
         // 🌟 المتغيرات الجديدة الخاصة بالـ Failover
         let PRIMARY_KEY = "";
-        let VISION_KEY = "";
-        let BACKUP_KEY = "";
         let GEMINI_KEY = "";
+        let BACKUP_KEY = "";
 
         let isBotActive = false;
         let botActivationTime = 0;
@@ -441,12 +441,17 @@
         let chatListenerRef = null;
         let permissionListenerRef = null;
         let currentExpireInterval = null;
+        let BOT_NAME = "تيم المستر";
+        let BOT_SUBJECT = "عام";
+        
+        function getSubKey() {
+            return btoa(unescape(encodeURIComponent(BOT_SUBJECT))).replace(/=/g, "");
+        }
 
         // جلب المفاتيح
         db.ref('settings/primary_api_key').on('value', snap => { PRIMARY_KEY = snap.val() || ""; });
-        db.ref('settings/vision_api_key').on('value', snap => { VISION_KEY = snap.val() || ""; });
-        db.ref('settings/backup_api_key').on('value', snap => { BACKUP_KEY = snap.val() || ""; });
         db.ref('settings/gemini_api_key').on('value', snap => { GEMINI_KEY = snap.val() || ""; });
+        db.ref('settings/backup_api_key').on('value', snap => { BACKUP_KEY = snap.val() || ""; });
 
         auth.onAuthStateChanged(user => {
             if (!user) window.location.href = 'index.html';
@@ -540,13 +545,47 @@
                 const botUI = document.getElementById('bot-ui-container');
                 if (hasPermission) {
                     botUI.style.display = 'flex';
+                    loadBotIdentity();
                 } else {
                     botUI.style.display = 'none';
-                    if (isBotActive) {
-                        document.getElementById('botToggle').checked = false;
-                        toggleBot(false);
-                    }
                 }
+            });
+        }
+
+        async function loadBotIdentity() {
+            const snap = await db.ref(`settings/bot_configs/${selectedServer}`).get();
+            if (snap.exists()) {
+                const data = snap.val();
+                BOT_NAME = data.bot_name || "تيم المستر";
+                BOT_SUBJECT = data.subject || "عام";
+                document.getElementById('bot-name-input').value = BOT_NAME;
+                document.getElementById('bot-subject-input').value = BOT_SUBJECT;
+            }
+        }
+
+        function saveBotIdentity() {
+            const name = document.getElementById('bot-name-input').value.trim();
+            const subject = document.getElementById('bot-subject-input').value.trim();
+            if (!name || !subject) {
+                alert("يرجى ملء جميع الخانات");
+                return;
+            }
+            db.ref(`settings/bot_configs/${selectedServer}`).update({
+                bot_name: name,
+                subject: subject
+            }).then(() => {
+                BOT_NAME = name;
+                BOT_SUBJECT = subject;
+                alert("تم حفظ إعدادات الهوية بنناج ✅");
+            });
+        }
+
+        function clearTeacherCache() {
+            if (!selectedServer) return;
+            if (!confirm(`هل أنت متأكد من مسح ذاكرة الردود (الكاش) لمدرس مادة [${BOT_SUBJECT}]؟ سيؤدي هذا لتوليد ردود جديدة كلياً.`)) return;
+            
+            db.ref(`settings/ai_cache/${selectedServer}`).remove().then(() => {
+                alert("تم مسح الكاش بنجاح 🧹");
             });
         }
 
@@ -554,7 +593,7 @@
             isBotActive = state;
             const statusText = document.getElementById('bot-status-text');
             if (state) {
-                if (!PRIMARY_KEY && !BACKUP_KEY && !VISION_KEY) {
+                if (!PRIMARY_KEY && !BACKUP_KEY && !GEMINI_KEY) {
                     alert("لم يتم إعداد مفاتيح السيرفرات في لوحة الإدارة بعد!");
                     document.getElementById('botToggle').checked = false;
                     isBotActive = false;
@@ -580,122 +619,113 @@
 
         async function fetchImageAsBase64(url) {
             if (!url) return null;
-            const urlsToTry = [
-                url, // المحاولة المباشرة أولاً
-                `https://api.allorigins.win/raw?url=${encodeURIComponent(url)}`,
-                `https://corsproxy.io/?${encodeURIComponent(url)}`
-            ];
-
-            for (let targetUrl of urlsToTry) {
-                try {
-                    const response = await fetch(targetUrl);
-                    if (!response.ok) continue;
-                    const blob = await response.blob();
-
-                    // حماية من بروكسيات الأخطاء التي ترجع HTML
-                    if (blob.type.includes('text/html')) continue;
-
-                    return await new Promise((resolve, reject) => {
-                        const reader = new FileReader();
-                        reader.onloadend = () => {
-                            resolve({
-                                mimeType: blob.type.includes('image/') ? blob.type : 'image/jpeg',
-                                data: reader.result.split(',')[1]
-                            });
-                        };
-                        reader.onerror = reject;
-                        reader.readAsDataURL(blob);
-                    });
-                } catch (e) {
-                    console.warn(`Fetch failed for ${targetUrl}:`, e);
-                }
-            }
-            return null;
-        }
-
-        async function hashBase64(base64Str) {
-            const encoder = new TextEncoder();
-            const data = encoder.encode(base64Str);
-            const hashBuffer = await crypto.subtle.digest('SHA-256', data);
-            const hashArray = Array.from(new Uint8Array(hashBuffer));
-            return hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
-        }
-
-        async function extractImageContentWithGemini(imageUrl, todayStr, studentName) {
-            const activeGeminiKey = GEMINI_KEY || VISION_KEY;
-            if (!activeGeminiKey) return "[فشل الاستخراج: لا يوجد مفتاح API جيميناي]";
             try {
-                const imgData = await fetchImageAsBase64(imageUrl);
-                if (!imgData) return "[فشل الاستخراج: لم يتم تحميل الصورة]";
-
-                // 🌟 نظام الكاش العالمي: التحقق من بصمة الصورة أولاً 🌟
-                const imageHash = await hashBase64(imgData.data);
-                const globalCacheSnap = await db.ref(`settings/global_image_cache/${imageHash}`).get();
-                if (globalCacheSnap.exists()) {
-                    console.log("Global Hash Match! Loaded from Cache.");
-                    return globalCacheSnap.val(); // العودة النظيفة والسريعة بدون استهلاك
-                }
-
-                let finalUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2-flash:generateContent?key=${activeGeminiKey}`;
-                let res = await fetch(finalUrl, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({
-                        systemInstruction: { parts: [{ text: "أنت محلل صوري لبرنامج شرح رياضيات. استخرج ووصف بدقة فائقة كافة المعادلات والمحتويات والأرقام بترتيبها الموجود في الصورة، لكي يقرأها موديل ذكاء اصطناعي آخر لحل المسألة." }] },
-                        contents: [{ role: "user", parts: [{ inlineData: { mimeType: imgData.mimeType || "image/jpeg", data: imgData.data } }] }]
-                    })
+                // استخدام بروكسي لتجاوز الحماية وتقرأ الصورة بنجاح بدون تعديل الفايربيز
+                const proxyUrl = `https://api.allorigins.win/raw?url=${encodeURIComponent(url)}`;
+                const response = await fetch(proxyUrl);
+                if (!response.ok) throw new Error("Network error");
+                const blob = await response.blob();
+                return new Promise((resolve, reject) => {
+                    const reader = new FileReader();
+                    reader.onloadend = () => {
+                        resolve({
+                            mimeType: blob.type || 'image/jpeg',
+                            data: reader.result.split(',')[1]
+                        });
+                    };
+                    reader.onerror = reject;
+                    reader.readAsDataURL(blob);
                 });
-
-                if (res.ok) {
-                    let data = await res.json();
-                    let textResult = data.candidates[0].content.parts[0].text;
-
-                    // تسجيل الفاتورة والاستهلاك فقط للصور الجديدة الحقيقية
-                    let inputTokens = data.usageMetadata ? data.usageMetadata.promptTokenCount || 0 : 0;
-                    let outputTokens = data.usageMetadata ? data.usageMetadata.candidatesTokenCount || 0 : 0;
-                    db.ref(`settings/gemini_limits_${todayStr}/total`).set(firebase.database.ServerValue.increment(1));
-                    if (inputTokens > 0) db.ref(`settings/gemini_limits_${todayStr}/tokens_input`).set(firebase.database.ServerValue.increment(inputTokens));
-                    if (outputTokens > 0) db.ref(`settings/gemini_limits_${todayStr}/tokens_output`).set(firebase.database.ServerValue.increment(outputTokens));
-                    db.ref(`settings/gemini_limits_${todayStr}/users/${studentName}`).set(firebase.database.ServerValue.increment(1));
-
-                    // 🌟 حفظ النتيجة في الكاش العالمي لتوفير استهلاك الطلاب في المستقبل 🌟
-                    await db.ref(`settings/global_image_cache/${imageHash}`).set(textResult);
-
-                    return textResult;
-                }
             } catch (e) {
-                console.error("Gemini Extraction Error", e);
+                console.warn("⚠️ فشل جلب الصورة برمجياً:", e);
+                return null;
             }
-            return "[عذراً، حدث خطأ أثناء قراءة الصورة وتم تخطيها]";
         }
 
-        async function processAIRequest(messagesArray, server, studentName, hasImage) {
-            // -- تحويل كل شيء إلى كاش نصي فقط للنماذج السريعة --
-            let processedTextMessages = [];
-            for (let m of messagesArray) {
-                let content = m.content || "";
-                if (m.imageUrl) {
-                    if (m.imageAnalysis) {
-                        content += `\n\n[محتوى الصورة المرفقة الذي قرأه جيميناي ومطلوب منك فهمه للحل: \n${m.imageAnalysis}]`;
-                    } else {
-                        content += "\n[صورة مرفقة لم يتم تحليلها]";
+        async function requestGemini(geminiKey, history) {
+            const contents = [];
+            let systemText = "";
+
+            for (let msg of history) {
+                if (msg.role === 'system') {
+                    systemText = msg.content;
+                    continue;
+                }
+
+                const parts = [];
+                // النص
+                if (msg.content) parts.push({ text: msg.content });
+
+                // الصورة
+                if (msg.imageUrl) {
+                    const imgData = await fetchImageAsBase64(msg.imageUrl);
+                    if (imgData) {
+                        parts.push({ inlineData: imgData });
                     }
                 }
 
-                if (content.trim() !== "") {
-                    processedTextMessages.push({
-                        role: m.role === 'system' ? 'system' : (m.role === 'model' || m.role === 'assistant' ? 'assistant' : 'user'),
-                        content: content
+                if (parts.length > 0) {
+                    contents.push({
+                        role: msg.role === 'user' ? 'user' : 'model',
+                        parts: parts
                     });
                 }
             }
 
-            if (PRIMARY_KEY && processedTextMessages.length > 1) {
+            if (contents.length === 0) throw new Error("Empty contents");
+
+            const body = {
+                contents: contents,
+                generationConfig: { temperature: 0.4, maxOutputTokens: 400 }
+            };
+
+            if (systemText) {
+                body.systemInstruction = { parts: [{ text: systemText }] };
+            }
+
+            const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${geminiKey}`;
+            const res = await fetch(url, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(body)
+            });
+
+            if (res.ok) {
+                const data = await res.json();
+                if (data.candidates && data.candidates[0].content && data.candidates[0].content.parts.length > 0) {
+                    return data.candidates[0].content.parts[0].text;
+                }
+            }
+            throw new Error("Gemini API request failed");
+        }
+
+        async function processAIRequest(messagesArray, hasImage) {
+            // مسار الصور: موديل جيميناي فقط
+            if (hasImage) {
+                if (GEMINI_KEY) {
+                    try {
+                        const rep = await requestGemini(GEMINI_KEY, messagesArray);
+                        if (rep) return rep;
+                    } catch (e) {
+                        console.error("Gemini failed for image", e);
+                    }
+                }
+                return null;
+            }
+
+            // مسار النصوص: جروك أولاً، جيمناي ثانياً، ديب سيك ثالثاً
+            const openaiMessages = messagesArray.map(m => ({
+                role: m.role === 'system' ? 'system' : (m.role === 'model' || m.role === 'assistant' ? 'assistant' : 'user'),
+                content: m.content || ""
+            }));
+
+            // 1. Groq (Primary)
+            if (PRIMARY_KEY) {
                 try {
                     const res1 = await fetch(getPUrl(), {
                         method: 'POST',
                         headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${PRIMARY_KEY}` },
-                        body: JSON.stringify({ model: getPMod(), messages: processedTextMessages, temperature: 0.4 })
+                        body: JSON.stringify({ model: getPMod(), messages: openaiMessages, temperature: 0.4, max_tokens: 400 })
                     });
                     if (res1.ok) {
                         const d1 = await res1.json();
@@ -704,12 +734,21 @@
                 } catch (e) { console.warn("Primary API failed."); }
             }
 
-            if (BACKUP_KEY && processedTextMessages.length > 1) {
+            // 2. Gemini (Fallback 1)
+            if (GEMINI_KEY) {
+                try {
+                    const rep = await requestGemini(GEMINI_KEY, messagesArray);
+                    if (rep) return rep;
+                } catch (e) { console.warn("Gemini API failed."); }
+            }
+
+            // 3. DeepSeek (Fallback 2)
+            if (BACKUP_KEY) {
                 try {
                     const res2 = await fetch(getBUrl(), {
                         method: 'POST',
                         headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${BACKUP_KEY}` },
-                        body: JSON.stringify({ model: getBMod(), messages: processedTextMessages, temperature: 0.4 })
+                        body: JSON.stringify({ model: getBMod(), messages: openaiMessages, temperature: 0.4, max_tokens: 400 })
                     });
                     if (res2.ok) {
                         const d2 = await res2.json();
@@ -728,44 +767,54 @@
                 const apiMessages = [
                     {
                         role: "system",
-                        content: "أنت مساعد ذكي وودود لمدرس رياضيات في منصة AMG التعليمية. \n" +
+                        content: `أنت مساعد تعليمي ذكي وودود لمدرس مادة [${BOT_SUBJECT}] في منصة AMG التعليمية. \n` +
                             "قواعد هامة جداً:\n" +
                             "1. اقرأ الرسائل السابقة لتفهم سياق المحادثة.\n" +
                             "2. أجب حصراً على 'الرسالة الأخيرة' التي أرسلها المستخدم بناءً على السياق.\n" +
                             "3. تحدث بطبيعية. وإذا سألك الطالب (عامل إيه، كيف حالك)، رد بلطف.\n" +
-                            "4. أجب على أسئلة الرياضيات بدقة وفي رسالة واحدة قصيرة فقط.\n" +
-                            "5. إذا سألك عن تخصص آخر غير الرياضيات اعتذر بلطف وأخبره أنك مخصص للرياضيات فقط.\n" +
-                            "6. لا تقم بتجزئة إجابتك، أرسل الرد كاملاً في فقرة واحدة."
+                            `4. أجب على أسئلة [${BOT_SUBJECT}] بدقة وفي رسالة واحدة قصيرة فقط.\n` +
+                            `5. إذا سألك عن تخصص آخر غير [${BOT_SUBJECT}] اعتذر بلطف وأخبره أنك مخصص لمادة [${BOT_SUBJECT}] فقط.\n` +
+                            "6. لا تقم بتجزئة إجابتك، أرسل الرد كاملًا في فقرة واحدة."
                     },
                     ...chatHistoryForApi
                 ];
 
                 const cacheKey = JSON.stringify(apiMessages);
+                const safeKey = btoa(unescape(encodeURIComponent(chatHistoryForApi[chatHistoryForApi.length-1].content.trim().toLowerCase()))).replace(/=/g, "");
+                const firebaseCachePath = `settings/ai_cache/${server}/${getSubKey()}/${safeKey}`;
 
-                // الكاش (تم تعطيله لتجنب استدعاء إجابات خاطئة قديمة من الذاكرة)
-                /*
+                // الكاش المحلي (للسرعة)
                 if (aiCache[cacheKey]) {
                     const cachedReply = aiCache[cacheKey];
                     await saveBotReply(cachedReply, server, studentName, msgKey);
                     return;
                 }
-                */
+
+                // الكاش العام (للمزامنة مع الموبايل)
+                const fbCacheSnap = await db.ref(firebaseCachePath).get();
+                if (fbCacheSnap.exists()) {
+                    const fbReply = fbCacheSnap.val();
+                    await saveBotReply(fbReply, server, studentName, msgKey);
+                    return;
+                }
 
                 // طلب الذكاء الاصطناعي بنظام التحويل الذكي (Failover)
-                const replyText = await processAIRequest(apiMessages, server, studentName, hasImage);
+                const replyText = await processAIRequest(apiMessages, hasImage);
 
                 if (replyText) {
                     aiCache[cacheKey] = replyText;
                     localStorage.setItem('amg_bot_cache', JSON.stringify(aiCache));
+                    // حفظ في الكاش العام للمزامنة
+                    db.ref(firebaseCachePath).set(replyText);
                     await saveBotReply(replyText, server, studentName, msgKey);
                 } else {
-                    // 🌟 الحماية من الـ Loop: تعيين كفشل بدلاً من الحذف لمنع إعادة المحاولة اللانهائية
-                    db.ref(`support_chats/${server}/${studentName}/${msgKey}/botReplied`).set('failed');
+                    // فشل السيرفرات بالكامل (نعيد العلامة لكي يحاول لاحقاً)
+                    db.ref(`support_chats/${server}/${studentName}/${msgKey}/botReplied`).remove();
                     processingMessages.delete(msgKey);
                 }
 
             } catch (error) {
-                db.ref(`support_chats/${server}/${studentName}/${msgKey}/botReplied`).set('failed');
+                db.ref(`support_chats/${server}/${studentName}/${msgKey}/botReplied`).remove();
                 processingMessages.delete(msgKey);
             }
         }
@@ -773,7 +822,7 @@
         async function saveBotReply(text, server, studentName, msgKey) {
             await db.ref(`support_chats/${server}/${studentName}`).push().set({
                 senderId: "BOT_ADMIN",
-                senderName: "مساعد الرياضيات",
+                senderName: BOT_NAME,
                 text: text,
                 timestamp: Date.now(),
                 isFromAdmin: true,
@@ -788,7 +837,7 @@
             if (serverChatsListenerRef) { serverChatsListenerRef.off(); }
 
             serverChatsListenerRef = db.ref(`support_chats/${selectedServer}`);
-            serverChatsListenerRef.on('value', async snap => {
+            serverChatsListenerRef.on('value', snap => {
                 const listDiv = document.getElementById('chat-list');
                 listDiv.innerHTML = '';
                 const students = snap.val();
@@ -814,12 +863,9 @@
                                 if (m.isFromAdmin === false && m.isRead === false) unreadCount++;
                                 if (m.text || m.imageUrl) {
                                     chatHistory.push({
-                                        key: m.key,
                                         role: m.isFromAdmin ? "assistant" : "user",
-                                        content: m.text || "",
-                                        imageUrl: m.imageUrl,
-                                        imageAnalysis: m.imageAnalysis || null,
-                                        botReplied: m.botReplied || false
+                                        content: m.text || (m.imageUrl ? "" : ""),
+                                        imageUrl: m.imageUrl
                                     });
                                 }
                             });
@@ -828,57 +874,15 @@
                             let recentHistoryForApi = chatHistory.slice(-10);
                             let hasImage = recentHistoryForApi.some(m => m.imageUrl);
 
+/* 
                             if (isBotActive && lastMsg && lastMsg.isFromAdmin === false && !lastMsg.botReplied && (lastMsg.text || lastMsg.imageUrl) && lastMsg.timestamp >= botActivationTime) {
                                 if (!processingMessages.has(lastMsg.key)) {
                                     processingMessages.add(lastMsg.key);
-
-                                    // ✨ الكاش السحري: قراءة أية صور جديدة لمرة واحدة وتخزينها
-                                    if (lastMsg.imageUrl && !lastMsg.imageAnalysis) {
-                                        const todayStr = new Date().toISOString().split('T')[0];
-
-                                        // 🌟 التحقق من الحد الأقصى للطالب يومياً 🌟
-                                        let customLimitSnap = await db.ref(`settings/custom_gemini_limits/${name}`).get();
-                                        let userLimit = customLimitSnap.exists() ? parseInt(customLimitSnap.val()) : 3;
-
-                                        let limitSnap = await db.ref(`settings/gemini_limits_${todayStr}/users/${name}`).get();
-                                        if (limitSnap.exists() && limitSnap.val() >= userLimit) {
-                                            const exceedMsg = `عذراً يا بطل! 🛑 لقد استنفذت باقتك اليومية (${userLimit} صور يومياً). يمكنك كتابة سؤالك وسأجيبك فوراً، أو عد غداً لإرسال المزيد من الصور.`;
-                                            await db.ref(`support_chats/${selectedServer}/${name}`).push().set({
-                                                senderId: "BOT_ADMIN",
-                                                senderName: "مساعد الرياضيات",
-                                                text: exceedMsg,
-                                                timestamp: Date.now(),
-                                                isFromAdmin: true,
-                                                isRead: true
-                                            });
-                                            db.ref(`support_chats/${selectedServer}/${name}/${lastMsg.key}/botReplied`).set(true);
-                                            db.ref(`support_chats/${selectedServer}/${name}/${lastMsg.key}/imageAnalysis`).set("[صورة لم يتم تحليلها لانتهاء الباقة]");
-                                            processingMessages.delete(lastMsg.key);
-                                            continue; // تخطي وتكملة باقي الطلاب
-                                        }
-
-                                        db.ref(`support_chats/${selectedServer}/${name}/${lastMsg.key}/botReplied`).set('processing_image');
-                                        const extractedAnalysis = await extractImageContentWithGemini(lastMsg.imageUrl, todayStr, name);
-
-                                        // تحديث الرسالة والكاش
-                                        lastMsg.imageAnalysis = extractedAnalysis;
-                                        chatHistory[chatHistory.length - 1].imageAnalysis = extractedAnalysis;
-                                        recentHistoryForApi = chatHistory.slice(-10); // إعادة توليد المصفوقة الحديثة
-                                        await db.ref(`support_chats/${selectedServer}/${name}/${lastMsg.key}/imageAnalysis`).set(extractedAnalysis);
-                                    }
-
                                     db.ref(`support_chats/${selectedServer}/${name}/${lastMsg.key}/botReplied`).set('processing');
-
-                                    const hasText = lastMsg.text && lastMsg.text.trim().length > 0;
-                                    if (!hasText && lastMsg.imageUrl) {
-                                        // تم حل الصورة وحفظها كمرجع، الآن نتنتظر سؤاله
-                                        db.ref(`support_chats/${selectedServer}/${name}/${lastMsg.key}/botReplied`).set(true);
-                                        processingMessages.delete(lastMsg.key);
-                                    } else {
-                                        askDeepSeek(recentHistoryForApi, selectedServer, name, lastMsg.key, hasImage);
-                                    }
+                                    askDeepSeek(recentHistoryForApi, selectedServer, name, lastMsg.key, hasImage);
                                 }
                             }
+*/
                         }
                         studentArray.push({ name, unreadCount, lastTimestamp });
                     }
