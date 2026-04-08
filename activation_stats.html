@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html lang="ar" dir="rtl">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -7,109 +8,299 @@
     <link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@400;500;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
     <style>
-        :root { --primary-color: #6C5CE7; --secondary-color: #A29BFE; --light-color: #F5F6FA; --dark-color: #2D3436; }
-        body { font-family: 'Tajawal', sans-serif; background-color: var(--light-color); margin: 0; padding: 0; color: var(--dark-color); }
-        
+        :root {
+            --primary-color: #6C5CE7;
+            --secondary-color: #A29BFE;
+            --light-color: #F5F6FA;
+            --dark-color: #2D3436;
+        }
+
+        body {
+            font-family: 'Tajawal', sans-serif;
+            background-color: var(--light-color);
+            margin: 0;
+            padding: 0;
+            color: var(--dark-color);
+        }
+
         /* --- تنسيقات الشريط العلوي --- */
         .navbar {
-            background-color: white; padding: 15px; box-shadow: 0 2px 5px rgba(0,0,0,0.05);
-            display: flex; justify-content: center; gap: 10px; flex-wrap: wrap; margin-bottom: 20px; align-items: center;
+            background-color: white;
+            padding: 15px;
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.05);
+            display: flex;
+            justify-content: center;
+            gap: 10px;
+            flex-wrap: wrap;
+            margin-bottom: 20px;
+            align-items: center;
         }
+
         .nav-btn {
-            text-decoration: none; color: var(--dark-color); padding: 10px 15px; border-radius: 8px;
-            font-weight: bold; background: #f0f0f5; transition: 0.3s; border: 1px solid #ddd;
-            display: flex; align-items: center; gap: 8px; font-size: 14px; white-space: nowrap;
+            text-decoration: none;
+            color: var(--dark-color);
+            padding: 10px 15px;
+            border-radius: 8px;
+            font-weight: bold;
+            background: #f0f0f5;
+            transition: 0.3s;
+            border: 1px solid #ddd;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 14px;
+            white-space: nowrap;
         }
-        .nav-btn:hover, .nav-btn.active { background: var(--primary-color); color: white; border-color: var(--primary-color); }
 
-        /* ستايل قائمة اختيار المدرس */
-        .teacher-select-container { 
-            margin-left: 10px; padding-left: 10px; border-left: 2px solid #eee; 
-            display: flex; align-items: center; gap: 8px;
-        }
-        #globalTeacherSelect { padding: 8px; border-radius: 5px; border: 1px solid var(--primary-color); font-weight: bold; color: var(--primary-color); font-family: 'Tajawal'; cursor: pointer; }
-
-        .container { max-width: 1200px; margin: 0 auto; padding: 0 15px 20px 15px; }
-        
-        header {
-            background-color: var(--primary-color); color: white; padding: 20px;
-            border-radius: 15px; text-align: center;
-            box-shadow: 0 4px 6px rgba(0,0,0,0.1); display: flex; justify-content: space-between; align-items: center;
-            flex-wrap: wrap; gap: 10px;
-        }
-        
-        /* --- أدوات التحكم (البحث) --- */
-        .controls { background: white; padding: 15px; border-radius: 10px; margin-top: 20px; box-shadow: 0 2px 5px rgba(0,0,0,0.1); }
-        .search-box { position: relative; margin-bottom: 10px; }
-        .search-box input { width: 100%; padding: 12px 40px 12px 15px; border: 1px solid #ddd; border-radius: 8px; font-size: 15px; box-sizing: border-box; }
-        .search-box i { position: absolute; right: 15px; top: 50%; transform: translateY(-50%); color: #888; }
-        
-        .action-btn { padding: 12px 20px; border: none; border-radius: 5px; cursor: pointer; font-weight: bold; color: white; background-color: var(--primary-color); transition: 0.3s; font-size: 14px; }
-        .action-btn:hover { opacity: 0.9; }
-
-        /* --- تنسيقات الجدول والمنطقة المحيطة --- */
-        #report-content { 
-            background: white; padding: 15px; border-radius: 10px; 
-            box-shadow: 0 2px 5px rgba(0,0,0,0.1); min-height: 400px; margin-top: 20px;
-            overflow-x: auto; 
-        }
-        
-        table { width: 100%; border-collapse: collapse; margin-top: 5px; min-width: 800px; }
-        th, td { padding: 12px 10px; text-align: right; border-bottom: 1px solid #eee; font-size: 14px; vertical-align: middle; }
-        th { background-color: #f8f9fa; color: var(--primary-color); font-weight: bold; white-space: nowrap; }
-        tr:hover { background-color: #f1f1f1; }
-        
-        .status-msg { text-align: center; padding: 20px; color: #777; }
-        #page-wrapper { display: none; }
-        
-        .date-badge { 
-            background-color: #e0f7fa; color: #006064; padding: 4px 8px; 
-            border-radius: 4px; font-size: 12px; font-weight: bold; 
-            direction: ltr; display: inline-block; white-space: nowrap;
-        }
-        
-        /* ستايل جديد لأسماء الشهور */
-        .month-badge {
-            background-color: #f3e5f5; color: #7b1fa2; padding: 3px 8px;
-            border-radius: 12px; font-size: 12px; font-weight: bold;
-            display: inline-block; margin: 2px; border: 1px solid #e1bee7;
-        }
-        /* --- إضافة ستايل خاص للشهر الأول القابل للضغط --- */
-        .clickable-m1 {
-            cursor: pointer;
-            transition: 0.2s;
-            border: 1px solid var(--primary-color);
-            background-color: #ffebee;
-            color: #c62828;
-            border-color: #ef9a9a;
-        }
-        .clickable-m1:hover {
-            background-color: var(--primary-color);
+        .nav-btn:hover,
+        .nav-btn.active {
+            background: var(--primary-color);
             color: white;
-            box-shadow: 0 2px 5px rgba(0,0,0,0.2);
-            transform: scale(1.05);
             border-color: var(--primary-color);
         }
-        .no-date { color: #999; font-size: 12px; }
 
-        /* تأثير التحديث اللحظي للبيانات بدون ريفريش */
-        @keyframes highlightRow {
-            0% { background-color: #d4edda; }
-            100% { background-color: transparent; }
+        /* ستايل قائمة اختيار المدرس */
+        .teacher-select-container {
+            margin-left: 10px;
+            padding-left: 10px;
+            border-left: 2px solid #eee;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        #globalTeacherSelect {
+            padding: 8px;
+            border-radius: 5px;
+            border: 1px solid var(--primary-color);
+            font-weight: bold;
+            color: var(--primary-color);
+            font-family: 'Tajawal';
+            cursor: pointer;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 0 15px 20px 15px;
+        }
+
+        header {
+            background-color: var(--primary-color);
+            color: white;
+            padding: 20px;
+            border-radius: 15px;
+            text-align: center;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 10px;
+        }
+
+        /* --- أدوات التحكم (البحث) --- */
+        .controls {
+            background: white;
+            padding: 15px;
+            border-radius: 10px;
+            margin-top: 20px;
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+        }
+
+        .search-box {
+            position: relative;
+            margin-bottom: 10px;
+        }
+
+        .search-box input {
+            width: 100%;
+            padding: 12px 40px 12px 15px;
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            font-size: 15px;
+            box-sizing: border-box;
+        }
+
+        .search-box i {
+            position: absolute;
+            right: 15px;
+            top: 50%;
+            transform: translateY(-50%);
+            color: #888;
+        }
+
+        .action-btn {
+            padding: 12px 20px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-weight: bold;
+            color: white;
+            background-color: var(--primary-color);
+            transition: 0.3s;
+            font-size: 14px;
+        }
+
+        .action-btn:hover {
+            opacity: 0.9;
+        }
+
+        /* --- تنسيقات الجدول والمنطقة المحيطة --- */
+        #report-content {
+            background: white;
+            padding: 15px;
+            border-radius: 10px;
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+            min-height: 400px;
+            margin-top: 20px;
+            overflow-x: auto;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 5px;
+            min-width: 800px;
+        }
+
+        th,
+        td {
+            padding: 12px 10px;
+            text-align: right;
+            border-bottom: 1px solid #eee;
+            font-size: 14px;
+            vertical-align: middle;
+        }
+
+        th {
+            background-color: #f8f9fa;
+            color: var(--primary-color);
+            font-weight: bold;
+            white-space: nowrap;
+        }
+
+        tr:hover {
+            background-color: #f1f1f1;
+        }
+
+        .status-msg {
+            text-align: center;
+            padding: 20px;
+            color: #777;
+        }
+
+        #page-wrapper {
+            display: none;
+        }
+
+        .date-badge {
+            background-color: #e0f7fa;
+            color: #006064;
+            padding: 4px 8px;
+            border-radius: 4px;
+            font-size: 12px;
+            font-weight: bold;
+            direction: ltr;
+            display: inline-block;
+            white-space: nowrap;
+        }
+
+        /* ستايل جديد لأسماء الشهور */
+        .month-badge {
+            background-color: #f3e5f5;
+            color: #7b1fa2;
+            padding: 3px 8px;
+            border-radius: 12px;
+            font-size: 12px;
+            font-weight: bold;
+            display: inline-block;
+            margin: 2px;
+            border: 1px solid #e1bee7;
+        }
+
+        .no-date {
+            color: #999;
+            font-size: 12px;
+        }
+
+        /* ستايل الشهور المنتهية القابلة للتمديد */
+        .month-badge.expired-clickable {
+            background-color: #ffebee;
+            color: #c62828;
+            border: 1px solid #ef9a9a;
+            cursor: pointer;
+            transition: 0.2s;
+            position: relative;
+        }
+
+        .month-badge.expired-clickable:hover {
+            background-color: #ef9a9a;
+            color: white;
+            transform: translateY(-1px);
+        }
+
+        .month-badge.expired-clickable::after {
+            content: '\f304';
+            font-family: 'Font Awesome 5 Free';
+            font-weight: 900;
+            margin-right: 5px;
+            font-size: 10px;
         }
 
         /* --- إضافات الإيميل والباسورد --- */
-        .toggle-btn { background: none; border: none; cursor: pointer; color: var(--primary-color); font-size: 18px; transition: 0.3s; padding: 5px 10px; border-radius: 5px; }
-        .toggle-btn:hover { background: #e0e0e0; }
-        .details-row { display: none; background-color: #fafafa; }
-        .details-content { display: flex; justify-content: center; flex-wrap: wrap; gap: 30px; padding: 15px; border: 1px dashed #ccc; border-radius: 8px; margin: 5px 0; }
-        .copy-badge { 
-            background: #e2e8f0; padding: 8px 15px; border-radius: 8px; cursor: pointer; 
-            font-family: monospace; font-size: 15px; font-weight: bold; transition: 0.2s; 
-            display: inline-flex; align-items: center; gap: 8px; color: var(--primary-color);
+        .toggle-btn {
+            background: none;
+            border: none;
+            cursor: pointer;
+            color: var(--primary-color);
+            font-size: 18px;
+            transition: 0.3s;
+            padding: 5px 10px;
+            border-radius: 5px;
+        }
+
+        .toggle-btn:hover {
+            background: #e0e0e0;
+        }
+
+        .details-row {
+            display: none;
+            background-color: #fafafa;
+        }
+
+        .details-content {
+            display: flex;
+            justify-content: center;
+            flex-wrap: wrap;
+            gap: 30px;
+            padding: 15px;
+            border: 1px dashed #ccc;
+            border-radius: 8px;
+            margin: 5px 0;
+        }
+
+        .copy-badge {
+            background: #e2e8f0;
+            padding: 8px 15px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-family: monospace;
+            font-size: 15px;
+            font-weight: bold;
+            transition: 0.2s;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            color: var(--primary-color);
             direction: ltr;
         }
-        .copy-badge:hover { background: #cbd5e1; transform: translateY(-2px); box-shadow: 0 2px 5px rgba(0,0,0,0.1); }
+
+        .copy-badge:hover {
+            background: #cbd5e1;
+            transform: translateY(-2px);
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+        }
 
         /* --- زرار التفعيل والتعطيل (Toggle Switch) --- */
         .switch {
@@ -117,69 +308,228 @@
             display: inline-block;
             width: 44px;
             height: 24px;
-            direction: ltr; 
+            direction: ltr;
         }
-        .switch input { opacity: 0; width: 0; height: 0; }
+
+        .switch input {
+            opacity: 0;
+            width: 0;
+            height: 0;
+        }
+
         .slider {
-            position: absolute; cursor: pointer; top: 0; left: 0; right: 0; bottom: 0;
-            background-color: #E74C3C; transition: .4s; border-radius: 24px;
+            position: absolute;
+            cursor: pointer;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-color: #E74C3C;
+            transition: .4s;
+            border-radius: 24px;
         }
+
         .slider:before {
-            position: absolute; content: ""; height: 18px; width: 18px; left: 3px; bottom: 3px;
-            background-color: white; transition: .4s; border-radius: 50%;
+            position: absolute;
+            content: "";
+            height: 18px;
+            width: 18px;
+            left: 3px;
+            bottom: 3px;
+            background-color: white;
+            transition: .4s;
+            border-radius: 50%;
         }
-        input:checked + .slider { background-color: #27AE60; }
-        input:checked + .slider:before { transform: translateX(20px); }
-        .status-text { font-size: 12px; font-weight: bold; display: block; margin-top: 5px; }
-        .text-active { color: #27AE60; }
-        .text-disabled { color: #E74C3C; }
+
+        input:checked+.slider {
+            background-color: #27AE60;
+        }
+
+        input:checked+.slider:before {
+            transform: translateX(20px);
+        }
+
+        .status-text {
+            font-size: 12px;
+            font-weight: bold;
+            display: block;
+            margin-top: 5px;
+        }
+
+        .text-active {
+            color: #27AE60;
+        }
+
+        .text-disabled {
+            color: #E74C3C;
+        }
 
         /* --- زرار إضافة الكود الجديد --- */
         .btn-add-code {
-            background-color: #3498db; color: white; border: none; border-radius: 5px;
-            padding: 6px 10px; cursor: pointer; font-size: 12px; font-family: 'Tajawal';
-            font-weight: bold; transition: 0.3s; display: inline-flex; align-items: center; gap: 5px;
+            background-color: #3498db;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            padding: 6px 10px;
+            cursor: pointer;
+            font-size: 12px;
+            font-family: 'Tajawal';
+            font-weight: bold;
+            transition: 0.3s;
+            display: inline-flex;
+            align-items: center;
+            gap: 5px;
             margin-top: 5px;
         }
-        .btn-add-code:hover { background-color: #2980b9; transform: translateY(-1px); }
+
+        .btn-add-code:hover {
+            background-color: #2980b9;
+            transform: translateY(-1px);
+        }
 
         /* --- النوافذ المنبثقة (Modals) --- */
         .modal {
-            display: none; position: fixed; z-index: 1000; left: 0; top: 0;
-            width: 100%; height: 100%; background-color: rgba(0,0,0,0.5); 
-            justify-content: center; align-items: center;
+            display: none;
+            position: fixed;
+            z-index: 1000;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.5);
+            justify-content: center;
+            align-items: center;
         }
+
         .modal-content {
-            background-color: #fff; padding: 20px; border-radius: 10px;
-            width: 320px; text-align: center; box-shadow: 0 5px 15px rgba(0,0,0,0.3);
+            background-color: #fff;
+            padding: 20px;
+            border-radius: 10px;
+            width: 320px;
+            text-align: center;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.3);
         }
-        .modal-content h3 { margin-top: 0; color: var(--primary-color); }
+
+        .modal-content h3 {
+            margin-top: 0;
+            color: var(--primary-color);
+        }
+
         .modal-content input {
-            width: 90%; padding: 10px; margin: 15px 0; border: 1px solid #ccc;
-            border-radius: 5px; font-family: 'Tajawal'; text-align: center;
+            width: 90%;
+            padding: 10px;
+            margin: 15px 0;
+            border: 1px solid #ccc;
+            border-radius: 5px;
+            font-family: 'Tajawal';
+            text-align: center;
         }
-        .modal-buttons { display: flex; justify-content: space-between; gap: 10px; }
+
+        .modal-buttons {
+            display: flex;
+            justify-content: space-between;
+            gap: 10px;
+        }
+
         .modal-btn {
-            flex: 1; padding: 10px; border: none; border-radius: 5px;
-            cursor: pointer; font-weight: bold; font-family: 'Tajawal'; color: white;
+            flex: 1;
+            padding: 10px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-weight: bold;
+            font-family: 'Tajawal';
+            color: white;
         }
-        .btn-confirm { background-color: var(--primary-color); }
-        .btn-cancel { background-color: #95a5a6; }
+
+        .btn-confirm {
+            background-color: var(--primary-color);
+        }
+
+        .btn-cancel {
+            background-color: #95a5a6;
+        }
 
         /* --- تحسينات الموبايل (Media Queries) --- */
         @media (max-width: 768px) {
-            .navbar { justify-content: flex-start; overflow-x: auto; padding-bottom: 10px; }
-            .teacher-select-container { border-left: none; margin-left: 0; padding-left: 0; width: 100%; margin-top: 10px; border-top: 1px solid #eee; padding-top: 10px; }
-            #globalTeacherSelect { width: 100%; }
-            header { flex-direction: column; text-align: center; }
-            header h2 { font-size: 18px; margin: 10px 0; }
-            .controls { padding: 10px; }
-            .action-btn { width: 100%; margin-top: 5px; }
-            th, td { padding: 10px 5px; font-size: 13px; }
-            .details-content { flex-direction: column; gap: 15px; align-items: stretch; text-align: center; }
+            .navbar {
+                justify-content: flex-start;
+                overflow-x: auto;
+                padding-bottom: 10px;
+            }
+
+            .teacher-select-container {
+                border-left: none;
+                margin-left: 0;
+                padding-left: 0;
+                width: 100%;
+                margin-top: 10px;
+                border-top: 1px solid #eee;
+                padding-top: 10px;
+            }
+
+            #globalTeacherSelect {
+                width: 100%;
+            }
+
+            header {
+                flex-direction: column;
+                text-align: center;
+            }
+
+            header h2 {
+                font-size: 18px;
+                margin: 10px 0;
+            }
+
+            .controls {
+                padding: 10px;
+            }
+
+            .action-btn {
+                width: 100%;
+                margin-top: 5px;
+            }
+
+            th,
+            td {
+                padding: 10px 5px;
+                font-size: 13px;
+            }
+
+            .details-content {
+                flex-direction: column;
+                gap: 15px;
+                align-items: stretch;
+                text-align: center;
+            }
+        }
+
+        /* ستايل التنبيه (Toast) */
+        #customToast {
+            position: fixed;
+            bottom: -100px;
+            left: 50%;
+            transform: translateX(-50%);
+            background-color: #27ae60;
+            color: white;
+            padding: 12px 25px;
+            border-radius: 30px;
+            font-weight: bold;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+            transition: 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            z-index: 9999;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        #customToast.show {
+            bottom: 30px;
         }
     </style>
 </head>
+
 <body>
 
     <div id="page-wrapper">
@@ -192,7 +542,7 @@
             <a href="Move_lec.html" class="nav-btn"><i class="fas fa-exchange-alt"></i> نقل</a>
             <a href="add_lec.html" class="nav-btn"><i class="fas fa-upload"></i> رفع</a>
             <a href="post.html" class="nav-btn"><i class="fas fa-newspaper"></i> بوست</a>
-            
+
             <div class="teacher-select-container">
                 <i class="fas fa-chalkboard-teacher" style="color:var(--primary-color)"></i>
                 <select id="globalTeacherSelect" onchange="changeGlobalTeacher(this.value)">
@@ -204,13 +554,15 @@
             <header>
                 <div id="welcome-msg">مرحباً...</div>
                 <h2>بيانات الطلاب - <span id="currentTeacherName"></span></h2>
-                <button onclick="logout()" class="action-btn" style="background:#E74C3C; padding: 5px 15px; font-size: 12px; width: auto;">خروج</button>
+                <button onclick="logout()" class="action-btn"
+                    style="background:#E74C3C; padding: 5px 15px; font-size: 12px; width: auto;">خروج</button>
             </header>
 
             <div class="controls">
                 <div class="search-box">
                     <i class="fas fa-search"></i>
-                    <input type="text" id="searchInput" placeholder="بحث بالاسم، الكود، الشهور، أو رقم الهاتف..." onkeyup="filterAndRender()">
+                    <input type="text" id="searchInput" placeholder="بحث بالاسم، الكود، الشهور، أو رقم الهاتف..."
+                        onkeyup="filterAndRender()">
                 </div>
                 <button class="action-btn" onclick="initPage()">تحديث البيانات</button>
             </div>
@@ -221,16 +573,18 @@
                         <tr>
                             <th width="5%">#</th>
                             <th width="18%">اسم الطالب</th>
-                            <th width="10%">الكود</th> 
-                            <th width="20%">الشهور المتاحة</th> 
+                            <th width="10%">الكود</th>
+                            <th width="20%">الشهور المتاحة</th>
                             <th width="12%">رقم الهاتف</th>
                             <th width="15%">تاريخ آخر تفعيل</th>
-                            <th width="12%">الحالة</th> 
-                            <th width="8%">إجراءات</th> 
+                            <th width="12%">الحالة</th>
+                            <th width="8%">إجراءات</th>
                         </tr>
                     </thead>
                     <tbody id="tableBody">
-                        <tr><td colspan="8" class="status-msg">جاري تحميل البيانات...</td></tr>
+                        <tr>
+                            <td colspan="8" class="status-msg">جاري تحميل البيانات...</td>
+                        </tr>
                     </tbody>
                 </table>
             </div>
@@ -255,21 +609,15 @@
             <p style="font-size: 14px; color: #555; margin-bottom: 5px;" id="activationStudentName"></p>
             <input type="text" id="manualCodeInput" placeholder="أدخل الكود الجديد هنا...">
             <div class="modal-buttons">
-                <button class="modal-btn btn-confirm" id="confirmActivationBtn" onclick="executeManualActivation()">تفعيل الكود</button>
+                <button class="modal-btn btn-confirm" id="confirmActivationBtn"
+                    onclick="executeManualActivation()">تفعيل الكود</button>
                 <button class="modal-btn btn-cancel" onclick="closeActivationModal()">إلغاء</button>
             </div>
         </div>
     </div>
 
-    <div id="syncModal" class="modal">
-        <div class="modal-content">
-            <h3><i class="fas fa-sync"></i> تحديث صلاحية الشهر الأول</h3>
-            <p style="font-size: 14px; color: #555;">هل أنت متأكد من تمديد صلاحية الشهر الأول؟</p>
-            <div class="modal-buttons" style="margin-top: 15px;">
-                <button class="modal-btn btn-confirm" id="confirmSyncBtn" onclick="executeSync()">تأكيد التمديد</button>
-                <button class="modal-btn btn-cancel" onclick="closeSyncModal()">إلغاء</button>
-            </div>
-        </div>
+    <div id="customToast">
+        <i class="fas fa-check-circle" style="font-size: 18px;"></i> تم التمديد بنجاح
     </div>
 
     <script src="https://www.gstatic.com/firebasejs/9.6.10/firebase-app-compat.js"></script>
@@ -290,22 +638,19 @@
         const db = firebase.database();
         const auth = firebase.auth();
 
+        auth.setPersistence(firebase.auth.Auth.Persistence.LOCAL).catch(function (error) {
+            console.error("خطأ في إعداد حفظ الجلسة:", error);
+        });
+
         let allRowsData = [];
         let activeTeacher = localStorage.getItem('selectedTeacher');
         let isAdmin = false;
         const THIRTY_DAYS_MS = 30 * 24 * 60 * 60 * 1000;
 
-        // متغيرات للتحكم في النوافذ والتحديث اللحظي
         let pendingToggleUid = null;
         let pendingCheckboxElem = null;
         let pendingIsActive = null;
         let pendingActivationUid = null;
-        let pendingSyncData = null; 
-
-        // حفظ بيانات الشهور بشكل عام لاستخدامها في التحديث اللحظي
-        let globalMonthDetailsMap = {};
-        let globalTeacherM1Id = null;
-        let globalTeacherM2Id = null;
 
         auth.onAuthStateChanged(async user => {
             if (user) {
@@ -316,7 +661,7 @@
                     if (adminSnap.exists()) {
                         isAdmin = true;
                         document.getElementById('welcome-msg').innerText = "مرحباً، المشرف العام";
-                        setupTeacherSelector(null); 
+                        setupTeacherSelector(null);
                     } else if (teaSnap.exists()) {
                         const rawVal = teaSnap.val();
                         const teachersList = rawVal.split('.').map(t => t.trim());
@@ -341,9 +686,9 @@
         function setupTeacherSelector(teachers) {
             const select = document.getElementById('globalTeacherSelect');
             select.innerHTML = '';
-            
+
             if (isAdmin) {
-                for(let i=1; i<=25; i++) {
+                for (let i = 1; i <= 25; i++) {
                     const t = `مدرس ${i}`;
                     const opt = document.createElement('option');
                     opt.value = t; opt.textContent = t;
@@ -356,19 +701,19 @@
                     opt.value = t; opt.textContent = t;
                     select.appendChild(opt);
                 });
-                
+
                 if (!activeTeacher || !teachers.includes(activeTeacher)) {
                     activeTeacher = teachers[0];
                 }
             }
-            
+
             select.value = activeTeacher;
             localStorage.setItem('selectedTeacher', activeTeacher);
             document.getElementById('currentTeacherName').innerText = activeTeacher;
             initPage();
         }
 
-        window.changeGlobalTeacher = function(val) {
+        window.changeGlobalTeacher = function (val) {
             activeTeacher = val;
             localStorage.setItem('selectedTeacher', val);
             document.getElementById('currentTeacherName').innerText = activeTeacher;
@@ -380,7 +725,7 @@
             try {
                 const [usersSnap, monthsSnap, accessSnap, codesSnap] = await Promise.all([
                     db.ref('users').once('value'),
-                    db.ref('months').once('value'), 
+                    db.ref('months').once('value'),
                     db.ref('student_month_access').once('value'),
                     db.ref('codes').once('value')
                 ]);
@@ -390,22 +735,13 @@
                 const accessObj = accessSnap.val() || {};
                 const codesObj = codesSnap.val() || {};
 
-                globalMonthDetailsMap = {};
-                globalTeacherM1Id = null;
-                globalTeacherM2Id = null;
-
+                let monthDetailsMap = {};
                 for (const [tName, tMonths] of Object.entries(monthsObj)) {
                     for (const [mId, mData] of Object.entries(tMonths)) {
-                        globalMonthDetailsMap[mId] = { 
-                            teacher: tName, 
-                            name: mData.name 
+                        monthDetailsMap[mId] = {
+                            teacher: tName,
+                            name: mData.name
                         };
-                        
-                        if (tName === activeTeacher) {
-                            const mName = (mData.name || "").toLowerCase();
-                            if (mName.includes("اول") || mName.includes("أول")) globalTeacherM1Id = mId;
-                            if (mName.includes("ثاني") || mName.includes("تاني")) globalTeacherM2Id = mId;
-                        }
                     }
                 }
 
@@ -423,45 +759,45 @@
                 const now = Date.now();
 
                 for (const [uid, userData] of Object.entries(usersObj)) {
-                    if (userData.year !== activeTeacher) {
-                        continue; 
-                    }
+                    if (userData.year !== activeTeacher) continue;
 
                     let displayDate = null;
-                    let activeMonthsList = [];
-                    const userAccess = accessObj[uid] || {}; // حفظ الداتا الأصلية للطالب
+                    let processedMonths = [];
+                    let month3Expiry = null;
+                    const userAccess = accessObj[uid];
 
-                    if (Object.keys(userAccess).length > 0) {
+                    if (userAccess) {
                         let latestActivation = 0;
-                        let m2Expiry = 0;
-                        if (globalTeacherM2Id && userAccess[globalTeacherM2Id]) {
-                            m2Expiry = userAccess[globalTeacherM2Id];
+
+                        for (const [monthId, expiryDate] of Object.entries(userAccess)) {
+                            const monthInfo = monthDetailsMap[monthId];
+                            if (monthInfo && monthInfo.teacher === activeTeacher) {
+                                const isThird = monthInfo.name.includes("3") || monthInfo.name.includes("تالت");
+                                if (isThird && expiryDate > now) {
+                                    month3Expiry = expiryDate;
+                                }
+
+                                const activationDate = expiryDate - THIRTY_DAYS_MS;
+                                if (activationDate > latestActivation) latestActivation = activationDate;
+                            }
                         }
 
                         for (const [monthId, expiryDate] of Object.entries(userAccess)) {
-                            const monthInfo = globalMonthDetailsMap[monthId];
-                            
+                            const monthInfo = monthDetailsMap[monthId];
                             if (monthInfo && monthInfo.teacher === activeTeacher) {
                                 let remainingDays = Math.ceil((expiryDate - now) / (1000 * 60 * 60 * 24));
-                                if (remainingDays < 0) remainingDays = 0; 
-                                
-                                let badgeHtml = '';
-                                if (monthId === globalTeacherM1Id) {
-                                    if (globalTeacherM2Id && m2Expiry > now && remainingDays < 10 && expiryDate < m2Expiry) {
-                                        badgeHtml = `<span class="month-badge clickable-m1" title="اضغط لتمديد الشهر الأول ليتطابق مع الشهر الثاني" onclick="attemptSync('${uid}', '${globalTeacherM1Id}', ${m2Expiry})">${monthInfo.name} (${remainingDays} يوم)</span>`;
-                                    } else {
-                                        badgeHtml = `<span class="month-badge">${monthInfo.name} (${remainingDays} يوم)</span>`;
-                                    }
-                                } else {
-                                    badgeHtml = `<span class="month-badge">${monthInfo.name} (${remainingDays} يوم)</span>`;
-                                }
+                                if (remainingDays < 0) remainingDays = 0;
 
-                                activeMonthsList.push(badgeHtml);
+                                const isThird = monthInfo.name.includes("3") || monthInfo.name.includes("تالت");
 
-                                const activationDate = expiryDate - THIRTY_DAYS_MS;
-                                if (activationDate > latestActivation) {
-                                    latestActivation = activationDate;
-                                }
+                                processedMonths.push({
+                                    id: monthId,
+                                    name: monthInfo.name,
+                                    remaining: remainingDays,
+                                    expiry: expiryDate,
+                                    isThird: isThird,
+                                    isExpiredOrNear: remainingDays <= 10
+                                });
                             }
                         }
                         if (latestActivation > 0) displayDate = latestActivation;
@@ -473,18 +809,17 @@
                         uid: uid,
                         fullName: userData.fullName || 'بدون اسم',
                         phone: userData.phoneNumber || '---',
-                        code: studentCodes, 
+                        code: studentCodes,
                         calculatedJoinDate: displayDate,
-                        activeMonths: activeMonthsList,
-                        rawAccess: userAccess, // مهم للتحديث اللحظي
+                        processedMonths: processedMonths,
+                        month3Expiry: month3Expiry,
                         email: userData.email || 'غير متوفر',
                         password: userData.password || 'غير متوفر',
-                        isDisabled: userData.isDisabled || false 
+                        isDisabled: userData.isDisabled || false
                     });
                 }
 
                 allRowsData.sort((a, b) => (b.calculatedJoinDate || 0) - (a.calculatedJoinDate || 0));
-
                 filterAndRender();
 
             } catch (error) {
@@ -496,7 +831,7 @@
         function filterAndRender() {
             const tableBody = document.getElementById('tableBody');
             const searchTerm = document.getElementById('searchInput').value.toLowerCase().trim();
-            
+
             tableBody.innerHTML = '';
 
             let count = 0;
@@ -504,16 +839,27 @@
 
             allRowsData.forEach(row => {
                 const codesSearchStr = Array.isArray(row.code) ? row.code.join(' ') : row.code;
-                const monthsString = row.activeMonths.join(' ');
+                const monthsString = row.processedMonths.map(m => m.name).join(' ');
                 const searchString = `${row.fullName} ${codesSearchStr} ${row.phone} ${monthsString}`.toLowerCase();
-                
+
                 if (searchTerm && !searchString.includes(searchTerm)) return;
 
                 count++;
-                
+
                 let monthsHtml = '';
-                if (row.activeMonths.length > 0) {
-                    monthsHtml = row.activeMonths.join('');
+                if (row.processedMonths.length > 0) {
+                    monthsHtml = row.processedMonths.map(m => {
+                        let cssClass = "month-badge";
+                        let onClickAttr = "";
+
+                        // إزالة التلميح نهائيا وتجهيز الكليك المباشر بدون رسائل
+                        if (m.isExpiredOrNear && row.month3Expiry && !m.isThird) {
+                            cssClass += " expired-clickable";
+                            onClickAttr = `onclick="syncMonthExpiry(this, '${row.uid}', '${m.id}', ${row.month3Expiry}, '${m.name}')"`;
+                        }
+
+                        return `<span class="${cssClass}" ${onClickAttr}>${m.name} (${m.remaining} يوم)</span>`;
+                    }).join('');
                 } else {
                     monthsHtml = '<span class="no-date">--</span>';
                 }
@@ -521,7 +867,7 @@
                 let dateBadge = '<span class="no-date">غير مفعل</span>';
                 if (row.calculatedJoinDate) {
                     const dateObj = new Date(row.calculatedJoinDate);
-                    const dateStr = dateObj.toLocaleDateString('ar-EG') + ' ' + dateObj.toLocaleTimeString('ar-EG', {hour: '2-digit', minute:'2-digit'});
+                    const dateStr = dateObj.toLocaleDateString('ar-EG') + ' ' + dateObj.toLocaleTimeString('ar-EG', { hour: '2-digit', minute: '2-digit' });
                     dateBadge = `<span class="date-badge">${dateStr}</span>`;
                 }
 
@@ -537,11 +883,11 @@
                 const statusText = !row.isDisabled ? 'نشط' : 'معطل';
 
                 html += `
-                    <tr id="row-${row.uid}">
+                    <tr>
                         <td>${count}</td>
                         <td style="font-weight:bold;">${row.fullName}</td>
                         <td style="font-family:monospace; font-weight:bold; line-height: 1.5;">${codesHtml}</td> 
-                        <td id="months-cell-${row.uid}">${monthsHtml}</td> 
+                        <td>${monthsHtml}</td> 
                         <td style="direction:ltr; text-align:right;">${row.phone}</td>
                         <td>${dateBadge}</td>
                         <td style="text-align: center;">
@@ -585,109 +931,23 @@
             }
         }
 
-        // --- تنفيذ تمديد صلاحية الشهر الأول بالتحديث اللحظي ---
-        window.attemptSync = function(uid, m1Id, m2Expiry) {
-            pendingSyncData = { uid, m1Id, m2Expiry };
-            document.getElementById('syncModal').style.display = 'flex';
-        };
-
-        window.closeSyncModal = function() {
-            document.getElementById('syncModal').style.display = 'none';
-            pendingSyncData = null;
-        };
-
-        window.executeSync = async function() {
-            if (!pendingSyncData) return;
-            const { uid, m1Id, m2Expiry } = pendingSyncData;
-            const btn = document.getElementById('confirmSyncBtn');
-            
-            btn.disabled = true;
-            btn.innerText = "جاري التحديث...";
-
-            try {
-                // رفع التعديل للفايربيز
-                await db.ref(`student_month_access/${uid}/${m1Id}`).set(m2Expiry);
-                
-                // --- التحديث اللحظي في الذاكرة والـ DOM (بدون ريفريش) ---
-                const userRow = allRowsData.find(u => u.uid === uid);
-                if (userRow && userRow.rawAccess) {
-                    userRow.rawAccess[m1Id] = m2Expiry; // تحديث الذاكرة الموضعية
-                    
-                    const now = Date.now();
-                    let newActiveMonthsList = [];
-                    let m2Exp = 0;
-                    
-                    if (globalTeacherM2Id && userRow.rawAccess[globalTeacherM2Id]) {
-                        m2Exp = userRow.rawAccess[globalTeacherM2Id];
-                    }
-
-                    // إعادة بناء الشارات الخاصة بالطالب
-                    for (const [monthId, expiryDate] of Object.entries(userRow.rawAccess)) {
-                        const monthInfo = globalMonthDetailsMap[monthId];
-                        if (monthInfo && monthInfo.teacher === activeTeacher) {
-                            let remainingDays = Math.ceil((expiryDate - now) / (1000 * 60 * 60 * 24));
-                            if (remainingDays < 0) remainingDays = 0; 
-                            
-                            let badgeHtml = '';
-                            if (monthId === globalTeacherM1Id) {
-                                // بعد التزامن، m1 هيكون قد m2، فالشرط ده هيكون False وهيرسم شارة عادية
-                                if (globalTeacherM2Id && m2Exp > now && remainingDays < 10 && expiryDate < m2Exp) {
-                                    badgeHtml = `<span class="month-badge clickable-m1" onclick="attemptSync('${uid}', '${globalTeacherM1Id}', ${m2Exp})">${monthInfo.name} (${remainingDays} يوم)</span>`;
-                                } else {
-                                    badgeHtml = `<span class="month-badge">${monthInfo.name} (${remainingDays} يوم)</span>`;
-                                }
-                            } else {
-                                badgeHtml = `<span class="month-badge">${monthInfo.name} (${remainingDays} يوم)</span>`;
-                            }
-                            newActiveMonthsList.push(badgeHtml);
-                        }
-                    }
-                    userRow.activeMonths = newActiveMonthsList; // حفظ التغيير للبحث
-
-                    // تحديث الجدول المعروض أمام المستخدم مباشرة
-                    const monthsCell = document.getElementById(`months-cell-${uid}`);
-                    if (monthsCell) {
-                        monthsCell.innerHTML = newActiveMonthsList.join('');
-                    }
-
-                    // إضافة وميض أخضر للتأكيد البصري
-                    const rowTr = document.getElementById(`row-${uid}`);
-                    if (rowTr) {
-                        rowTr.style.animation = 'none'; // إعادة ضبط الأنيميشن
-                        rowTr.offsetHeight; // تفعيل التدفق (Reflow)
-                        rowTr.style.animation = 'highlightRow 2s ease';
-                    }
-                }
-
-                alert("تم تحديث صلاحية الشهر الأول بنجاح!");
-                closeSyncModal();
-            } catch (error) {
-                console.error(error);
-                alert("حدث خطأ أثناء محاولة تحديث الصلاحية!");
-            } finally {
-                btn.disabled = false;
-                btn.innerText = "تأكيد التمديد";
-            }
-        };
-
-        // --- دوال التعطيل والتفعيل بالباسورد ---
-        window.initiateToggle = function(uid, checkboxElem) {
+        window.initiateToggle = function (uid, checkboxElem) {
             pendingToggleUid = uid;
             pendingCheckboxElem = checkboxElem;
-            pendingIsActive = checkboxElem.checked; 
+            pendingIsActive = checkboxElem.checked;
 
             document.getElementById('adminPasswordInput').value = '';
             document.getElementById('passwordModal').style.display = 'flex';
         };
 
-        window.closePasswordModal = function() {
+        window.closePasswordModal = function () {
             document.getElementById('passwordModal').style.display = 'none';
             if (pendingCheckboxElem) {
-                pendingCheckboxElem.checked = !pendingIsActive; 
+                pendingCheckboxElem.checked = !pendingIsActive;
             }
         };
 
-        window.verifyPasswordAndToggle = async function() {
+        window.verifyPasswordAndToggle = async function () {
             const inputPass = document.getElementById('adminPasswordInput').value;
             if (!inputPass) return alert("يرجى إدخال كلمة المرور");
 
@@ -712,18 +972,18 @@
         async function executeToggle() {
             const uid = pendingToggleUid;
             const isActive = pendingIsActive;
-            const newIsDisabled = !isActive; 
-            
+            const newIsDisabled = !isActive;
+
             pendingCheckboxElem.disabled = true;
 
             try {
                 await db.ref(`users/${uid}`).update({
                     isDisabled: newIsDisabled
                 });
-                
+
                 const userRow = allRowsData.find(u => u.uid === uid);
                 if (userRow) userRow.isDisabled = newIsDisabled;
-                
+
                 const statusTextElem = document.getElementById('status-text-' + uid);
                 if (isActive) {
                     statusTextElem.className = 'status-text text-active';
@@ -732,7 +992,7 @@
                     statusTextElem.className = 'status-text text-disabled';
                     statusTextElem.innerText = 'معطل';
                 }
-                
+
             } catch (error) {
                 console.error("Error updating status:", error);
                 alert("حدث خطأ أثناء محاولة تعديل حالة الحساب.");
@@ -742,32 +1002,31 @@
             }
         }
 
-        // --- دوال التفعيل اليدوي للكود ---
-        window.openActivationModal = function(uid, name) {
+        window.openActivationModal = function (uid, name) {
             pendingActivationUid = uid;
             document.getElementById('activationStudentName').innerText = `الطالب: ${name}`;
             document.getElementById('manualCodeInput').value = '';
             document.getElementById('activationModal').style.display = 'flex';
         };
 
-        window.closeActivationModal = function() {
+        window.closeActivationModal = function () {
             document.getElementById('activationModal').style.display = 'none';
             pendingActivationUid = null;
         };
 
-        window.executeManualActivation = async function() {
+        window.executeManualActivation = async function () {
             const uid = pendingActivationUid;
             const code = document.getElementById('manualCodeInput').value.trim();
             const btn = document.getElementById('confirmActivationBtn');
 
-            if(!code) return alert("يرجى إدخال الكود!");
+            if (!code) return alert("يرجى إدخال الكود!");
 
             btn.disabled = true;
             btn.innerText = "جاري التفعيل...";
 
             try {
                 const codeSnap = await db.ref(`codes/${code}`).once('value');
-                if(!codeSnap.exists()) {
+                if (!codeSnap.exists()) {
                     alert("هذا الكود غير موجود في النظام!");
                     return;
                 }
@@ -779,7 +1038,7 @@
                     return;
                 }
 
-                if(codeData.isUsed) {
+                if (codeData.isUsed) {
                     alert("هذا الكود تم استخدامه من قبل!");
                     return;
                 }
@@ -792,20 +1051,20 @@
 
                 const expiryTimestamp = Date.now() + THIRTY_DAYS_MS;
                 const updates = {};
-                
+
                 updates[`codes/${code}/isUsed`] = true;
                 updates[`codes/${code}/usedBy`] = uid;
-                updates[`users/${uid}/ncode`] = code; 
+                updates[`users/${uid}/ncode`] = code;
 
                 monthsToActivate.forEach(monthId => {
                     updates[`student_month_access/${uid}/${monthId}`] = expiryTimestamp;
                 });
 
                 await db.ref().update(updates);
-                
+
                 alert("تم تفعيل الكود بنجاح!");
                 closeActivationModal();
-                initPage(); 
+                initPage();
 
             } catch (error) {
                 console.error(error);
@@ -816,8 +1075,65 @@
             }
         };
 
-        // --- دوال أخرى ---
-        window.toggleDetails = function(uid, btnElement) {
+        // --- دالة التمديد (بمجرد الدوس وبدون رسائل وبدون ريفريش للصفحة) ---
+        window.syncMonthExpiry = async function (element, uid, monthId, targetExpiry, monthName) {
+            try {
+                // منع الضغط المتكرر أثناء إرسال البيانات للقاعدة
+                element.style.pointerEvents = "none";
+                element.style.opacity = "0.7";
+
+                // تحديث قاعدة البيانات في الخلفية
+                await db.ref(`student_month_access/${uid}/${monthId}`).set(targetExpiry);
+
+                // تحديث البيانات في المصفوفة محلياً 
+                const userRow = allRowsData.find(u => u.uid === uid);
+                if (userRow) {
+                    const monthObj = userRow.processedMonths.find(m => m.id === monthId);
+                    if (monthObj) {
+                        const now = Date.now();
+                        let remainingDays = Math.ceil((targetExpiry - now) / (1000 * 60 * 60 * 24));
+                        if (remainingDays < 0) remainingDays = 0;
+
+                        monthObj.expiry = targetExpiry;
+                        monthObj.remaining = remainingDays;
+                        monthObj.isExpiredOrNear = remainingDays <= 10;
+                    }
+                }
+
+                // تحديث شكل الزر فوراً في الصفحة أمام المستخدم 
+                const now = Date.now();
+                let newRemaining = Math.ceil((targetExpiry - now) / (1000 * 60 * 60 * 24));
+                if (newRemaining < 0) newRemaining = 0;
+
+                element.className = "month-badge"; // إزالة اللون الأحمر وجعله شهر عادي
+                element.innerHTML = `${monthName} (${newRemaining} يوم)`;
+                element.removeAttribute('onclick'); // إزالة خاصية الكليك
+                element.style.pointerEvents = "auto";
+                element.style.opacity = "1";
+
+                // إظهار رسالة النجاح المنبثقة من تحت
+                showSuccessToast();
+
+            } catch (error) {
+                console.error("Error syncing expiry:", error);
+                alert("حدث خطأ أثناء التحديث.");
+                element.style.pointerEvents = "auto";
+                element.style.opacity = "1";
+            }
+        };
+
+        // دالة إظهار الـ Toast الخاص بالنجاح
+        function showSuccessToast() {
+            const toast = document.getElementById('customToast');
+            if (toast) {
+                toast.className = "show";
+                setTimeout(() => {
+                    toast.className = "";
+                }, 2500);
+            }
+        }
+
+        window.toggleDetails = function (uid, btnElement) {
             const detailsRow = document.getElementById('details-' + uid);
             if (detailsRow.style.display === 'table-row') {
                 detailsRow.style.display = 'none';
@@ -828,7 +1144,7 @@
             }
         };
 
-        window.copyData = function(element, text) {
+        window.copyData = function (element, text) {
             if (text === 'غير متوفر') return;
             const originalHTML = element.innerHTML;
 
@@ -841,14 +1157,14 @@
                 document.body.appendChild(textArea);
                 textArea.focus();
                 textArea.select();
-                try { document.execCommand('copy'); } catch (err) {}
+                try { document.execCommand('copy'); } catch (err) { }
                 textArea.remove();
             }
 
             element.innerHTML = 'تم النسخ <i class="fas fa-check" style="color:#27ae60;"></i>';
             element.style.backgroundColor = '#d4edda';
             element.style.color = '#155724';
-            
+
             setTimeout(() => {
                 element.innerHTML = originalHTML;
                 element.style.backgroundColor = '';
@@ -862,4 +1178,5 @@
         }
     </script>
 </body>
+
 </html>
