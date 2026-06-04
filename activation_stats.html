@@ -616,6 +616,22 @@
         </div>
     </div>
 
+    <div id="changePasswordModal" class="modal">
+        <div class="modal-content">
+            <h3>تغيير كلمة السر</h3>
+            <p style="font-size: 14px; color: #555; margin-bottom: 5px;">تغيير كلمة السر للمستخدم: <span id="change-password-email-display" style="color: var(--primary-color); font-weight: bold;"></span></p>
+            <input type="password" id="new-user-password" placeholder="أدخل 6 أحرف على الأقل...">
+            <input type="hidden" id="change-password-user-id">
+            <div class="modal-buttons">
+                <button class="modal-btn btn-confirm" id="confirmChangePasswordBtn" onclick="saveUserPassword()">
+                    <span id="confirm-change-password-text">تغيير كلمة السر</span>
+                    <span id="confirm-change-password-loader" class="loading" style="display: none; width: 14px; height: 14px; margin: 0 auto;"></span>
+                </button>
+                <button class="modal-btn btn-cancel" onclick="closeChangePasswordModal()">إلغاء</button>
+            </div>
+        </div>
+    </div>
+
     <div id="customToast">
         <i class="fas fa-check-circle" style="font-size: 18px;"></i> تم التمديد بنجاح
     </div>
@@ -623,6 +639,7 @@
     <script src="https://www.gstatic.com/firebasejs/9.6.10/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.6.10/firebase-auth-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.6.10/firebase-database-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.6.10/firebase-functions-compat.js"></script>
 
     <script>
         const firebaseConfig = {
@@ -902,6 +919,10 @@
                                 <i class="fas fa-chevron-down"></i>
                             </button>
                             <br>
+                            <button class="btn-add-code change-password-btn" style="background-color: var(--primary-color); margin-top: 5px;" onclick="openChangePasswordModal('${row.uid}', '${row.email}')" title="تغيير كلمة السر">
+                                <i class="fas fa-key"></i> كلمة السر
+                            </button>
+                            <br>
                             <button class="btn-add-code" onclick="openActivationModal('${row.uid}', '${row.fullName}')" title="تفعيل كود للطالب">
                                 <i class="fas fa-key"></i> تفعيل
                             </button>
@@ -1123,9 +1144,10 @@
         };
 
         // دالة إظهار الـ Toast الخاص بالنجاح
-        function showSuccessToast() {
+        function showSuccessToast(message = "تم التمديد بنجاح") {
             const toast = document.getElementById('customToast');
             if (toast) {
+                toast.innerHTML = `<i class="fas fa-check-circle" style="font-size: 18px;"></i> ${message}`;
                 toast.className = "show";
                 setTimeout(() => {
                     toast.className = "";
@@ -1170,6 +1192,59 @@
                 element.style.backgroundColor = '';
                 element.style.color = '';
             }, 1500);
+        };
+
+        window.openChangePasswordModal = function (uid, email) {
+            document.getElementById('change-password-user-id').value = uid;
+            document.getElementById('change-password-email-display').textContent = email;
+            document.getElementById('new-user-password').value = '';
+            document.getElementById('changePasswordModal').style.display = 'flex';
+        };
+
+        window.closeChangePasswordModal = function () {
+            document.getElementById('changePasswordModal').style.display = 'none';
+        };
+
+        window.saveUserPassword = async function () {
+            const userId = document.getElementById('change-password-user-id').value;
+            const newPassword = document.getElementById('new-user-password').value.trim();
+            const btn = document.getElementById('confirmChangePasswordBtn');
+            const loader = document.getElementById('confirm-change-password-loader');
+            const btnText = document.getElementById('confirm-change-password-text');
+
+            if (newPassword.length < 6) {
+                alert('يجب أن تكون كلمة المرور 6 أحرف أو أكثر');
+                return;
+            }
+
+            btn.disabled = true;
+            btnText.style.display = 'none';
+            loader.style.display = 'inline-block';
+
+            try {
+                const changePasswordFn = firebase.app().functions('us-central1').httpsCallable('secureChangePassword');
+                const result = await changePasswordFn({ targetUid: userId, newPassword: newPassword });
+                
+                if (result.data && result.data.success) {
+                    showSuccessToast('تم تغيير كلمة المرور بنجاح');
+                    closeChangePasswordModal();
+                    
+                    const userRow = allRowsData.find(u => u.uid === userId);
+                    if (userRow) {
+                        userRow.password = newPassword;
+                    }
+                    filterAndRender();
+                } else {
+                    alert('فشل تغيير كلمة المرور');
+                }
+            } catch (error) {
+                console.error('Error changing password:', error);
+                alert(error.message || 'حدث خطأ أثناء تغيير كلمة المرور');
+            } finally {
+                btn.disabled = false;
+                btnText.style.display = 'inline-block';
+                loader.style.display = 'none';
+            }
         };
 
         function logout() {
