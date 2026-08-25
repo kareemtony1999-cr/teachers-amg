@@ -293,6 +293,27 @@
             flex-shrink: 0;
         }
 
+        .attach-btn {
+            background: transparent;
+            color: #54656f;
+            border: none;
+            width: 45px;
+            height: 45px;
+            border-radius: 50%;
+            cursor: pointer;
+            font-size: 22px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: background 0.2s, color 0.2s;
+            flex-shrink: 0;
+        }
+
+        .attach-btn:hover {
+            background: rgba(0, 0, 0, 0.05);
+            color: var(--primary);
+        }
+
         .back-btn {
             display: none;
             margin-left: 15px;
@@ -398,9 +419,43 @@
             </div>
 
             <div class="input-area" id="input-area" style="display: none;">
+                <button class="attach-btn" onclick="triggerImageUpload()" type="button" title="إرفاق صورة">
+                    <i class="fas fa-image"></i>
+                </button>
+                <input type="file" id="image-file-input" accept="image/*" style="display: none;" onchange="handleImageSelection(event)">
                 <input type="text" id="message-input" placeholder="اكتب ردك هنا...">
                 <button class="send-btn" onclick="sendReply()"><i class="fas fa-paper-plane"></i></button>
             </div>
+        </div>
+    </div>
+
+    <!-- Image Preview Modal -->
+    <div id="image-preview-modal" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.8); z-index: 1000; align-items: center; justify-content: center; flex-direction: column;">
+        <div style="background: #fff; border-radius: 12px; width: 90%; max-width: 500px; overflow: hidden; box-shadow: 0 5px 25px rgba(0,0,0,0.3); display: flex; flex-direction: column; max-height: 90vh;">
+            <div style="padding: 15px; background: #f0f2f5; display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #ddd;">
+                <b style="color: #333;">معاينة الصورة</b>
+                <i class="fas fa-times" onclick="closeImagePreview()" style="cursor: pointer; font-size: 20px; color: #666; padding: 5px;"></i>
+            </div>
+            <div style="padding: 20px; display: flex; justify-content: center; align-items: center; background: #ebebeb; max-height: 50vh; overflow: hidden;">
+                <img id="image-preview-element" style="max-width: 100%; max-height: 45vh; border-radius: 8px; object-fit: contain;">
+            </div>
+            <div style="padding: 15px; background: #f0f2f5; display: flex; flex-direction: column; gap: 10px; border-top: 1px solid #ddd;">
+                <input type="text" id="image-caption-input" placeholder="اكتب شرحاً للصورة..." style="padding: 12px; border-radius: 8px; border: 1px solid #ccc; outline: none; width: 100%; font-size: 14px;">
+                <div style="display: flex; justify-content: flex-end; gap: 10px; margin-top: 5px;">
+                    <button onclick="closeImagePreview()" style="background: #e74c3c; color: white; border: none; padding: 10px 20px; border-radius: 6px; cursor: pointer; font-weight: bold; font-size: 14px;">إلغاء</button>
+                    <button id="send-image-confirm-btn" onclick="uploadAndSendImage()" style="background: #27ae60; color: white; border: none; padding: 10px 20px; border-radius: 6px; cursor: pointer; font-weight: bold; font-size: 14px; display: flex; align-items: center; gap: 8px;">
+                        <span>إرسال</span> <i class="fas fa-paper-plane"></i>
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Image Upload Loading Overlay -->
+    <div id="image-upload-loading" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 1001; align-items: center; justify-content: center; flex-direction: column; color: white;">
+        <div style="background: rgba(0, 0, 0, 0.8); padding: 25px; border-radius: 12px; display: flex; flex-direction: column; align-items: center; gap: 15px;">
+            <i class="fas fa-spinner fa-spin" style="font-size: 40px; color: #27ae60;"></i>
+            <div id="upload-progress-text" style="font-weight: bold; font-size: 16px;">جاري رفع الصورة... 0%</div>
         </div>
     </div>
 
@@ -1047,6 +1102,116 @@
         }
 
         document.getElementById('message-input').addEventListener('keypress', e => { if (e.key === 'Enter') sendReply(); });
+
+        // --- Image Upload & Send Functionality ---
+        let selectedImageFile = null;
+
+        function triggerImageUpload() {
+            if (!currentChatPath) {
+                alert("يرجى اختيار طالب أولاً لإرسال صورة");
+                return;
+            }
+            document.getElementById('image-file-input').click();
+        }
+
+        function handleImageSelection(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+
+            if (!file.type.startsWith('image/')) {
+                alert("يرجى اختيار ملف صورة صالح");
+                return;
+            }
+
+            selectedImageFile = file;
+
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                document.getElementById('image-preview-element').src = e.target.result;
+                document.getElementById('image-caption-input').value = '';
+                document.getElementById('image-preview-modal').style.display = 'flex';
+                document.getElementById('image-caption-input').focus();
+            }
+            reader.readAsDataURL(file);
+        }
+
+        function closeImagePreview() {
+            document.getElementById('image-preview-modal').style.display = 'none';
+            document.getElementById('image-file-input').value = '';
+            selectedImageFile = null;
+        }
+
+        // Add Enter key event listener to caption input
+        document.getElementById('image-caption-input').addEventListener('keypress', e => {
+            if (e.key === 'Enter') {
+                uploadAndSendImage();
+            }
+        });
+
+        async function uploadAndSendImage() {
+            if (!selectedImageFile || !currentChatPath) return;
+
+            const file = selectedImageFile;
+            const caption = document.getElementById('image-caption-input').value.trim();
+
+            // Close the preview modal
+            document.getElementById('image-preview-modal').style.display = 'none';
+
+            // Show loading overlay
+            const loadingOverlay = document.getElementById('image-upload-loading');
+            const progressText = document.getElementById('upload-progress-text');
+            loadingOverlay.style.display = 'flex';
+            progressText.innerText = 'جاري رفع الصورة... 0%';
+
+            try {
+                const ext = file.name.split('.').pop();
+                const shortName = `img_${Date.now()}.${ext}`;
+                const storagePath = `support_images/${selectedServer}/${currentStudentName}/${shortName}`;
+                
+                const imgRef = storage.ref(storagePath);
+                const uploadTask = imgRef.put(file);
+
+                await new Promise((resolve, reject) => {
+                    uploadTask.on('state_changed', 
+                        (snapshot) => {
+                            const progress = Math.round((snapshot.bytesTransferred / snapshot.totalBytes) * 100);
+                            progressText.innerText = `جاري رفع الصورة... ${progress}%`;
+                        }, 
+                        (error) => {
+                            reject(error);
+                        }, 
+                        async () => {
+                            try {
+                                const downloadURL = await uploadTask.snapshot.ref.getDownloadURL();
+                                
+                                await db.ref(currentChatPath).push().set({
+                                    senderId: "ADMIN",
+                                    text: caption,
+                                    imageUrl: downloadURL,
+                                    imageStoragePath: storagePath,
+                                    timestamp: Date.now(),
+                                    isFromAdmin: true,
+                                    isRead: true
+                                });
+                                resolve();
+                            } catch (e) {
+                                reject(e);
+                            }
+                        }
+                    );
+                });
+
+                closeImagePreview();
+            } catch (error) {
+                console.error("Image upload failed:", error);
+                alert("حدث خطأ أثناء رفع الصورة: " + error.message);
+                // Re-open preview in case of failure so they don't lose the selection/caption
+                document.getElementById('image-preview-modal').style.display = 'flex';
+            } finally {
+                loadingOverlay.style.display = 'none';
+            }
+        }
+        // -----------------------------------------
 
         function toggleSidebar(show) {
             const sb = document.getElementById('sidebar');
