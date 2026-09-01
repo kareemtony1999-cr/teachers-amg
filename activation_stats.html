@@ -450,6 +450,60 @@
             background-color: #95a5a6;
         }
 
+        /* --- تنسيقات نافذة الباركود العامة --- */
+        .modal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 15px;
+        }
+
+        .modal-title {
+            font-size: 18px;
+            color: var(--primary-color);
+            margin: 0;
+        }
+
+        .close-modal {
+            font-size: 24px;
+            cursor: pointer;
+            color: #888;
+            font-weight: bold;
+            line-height: 1;
+            transition: 0.2s;
+        }
+
+        .close-modal:hover {
+            color: #333;
+        }
+
+        .modal-footer {
+            display: flex;
+            justify-content: flex-end;
+            gap: 10px;
+            margin-top: 20px;
+        }
+
+        .btn-secondary {
+            background-color: #6c757d;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            padding: 8px 16px;
+            cursor: pointer;
+            font-family: 'Tajawal';
+            font-weight: bold;
+            transition: 0.3s;
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            font-size: 13px;
+        }
+
+        .btn-secondary:hover {
+            opacity: 0.9;
+        }
+
         /* --- تحسينات الموبايل (Media Queries) --- */
         @media (max-width: 768px) {
             .navbar {
@@ -633,6 +687,32 @@
         </div>
     </div>
 
+    <!-- نافذة الباركود المنبثقة -->
+    <div class="modal" id="barcode-modal">
+        <div class="modal-content" style="max-width: 420px; width: 90%; text-align: center; padding: 25px; box-sizing: border-box;">
+            <div class="modal-header">
+                <h3 class="modal-title" style="display: flex; align-items: center; gap: 8px; color: var(--primary-color);">
+                    <i class="fas fa-barcode"></i>
+                    <span>باركود كود التسجيل</span>
+                </h3>
+                <span class="close-modal">&times;</span>
+            </div>
+            <div class="modal-body" style="display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 15px 0;">
+                <p id="barcode-student-email" style="font-weight: bold; margin-bottom: 15px; color: #555; font-size: 14px; word-break: break-all; margin-top: 0;"></p>
+                
+                <div style="background: white; padding: 15px; border-radius: 8px; border: 1px dashed #ccc; display: flex; align-items: center; justify-content: center; min-height: 150px; width: 100%; box-sizing: border-box;">
+                    <svg id="barcode" style="max-width: 100%;"></svg>
+                </div>
+            </div>
+            <div class="modal-footer" style="justify-content: center; gap: 12px; margin-top: 15px; border-top: 1px solid #eee; padding-top: 15px;">
+                <button type="button" class="btn-secondary" id="toggle-barcode-text-btn" style="background-color: var(--primary-color);">
+                    <i class="fas fa-eye-slash"></i> إخفاء الأرقام
+                </button>
+                <button type="button" class="btn-secondary close-modal-btn">إغلاق</button>
+            </div>
+        </div>
+    </div>
+
     <div id="customToast">
         <i class="fas fa-check-circle" style="font-size: 18px;"></i> تم التمديد بنجاح
     </div>
@@ -641,6 +721,7 @@
     <script src="https://www.gstatic.com/firebasejs/9.6.10/firebase-auth-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.6.10/firebase-database-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.6.10/firebase-functions-compat.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/jsbarcode@3.11.5/dist/JsBarcode.all.min.js"></script>
 
     <script>
         const firebaseConfig = {
@@ -822,12 +903,21 @@
                     }
 
                     const studentCodes = userCodeMap[uid] || [];
+                    if (userData.code && !studentCodes.includes(userData.code.toString())) {
+                        studentCodes.unshift(userData.code.toString());
+                    }
+                    if (userData.ncode && !studentCodes.includes(userData.ncode.toString())) {
+                        studentCodes.push(userData.ncode.toString());
+                    }
+
+                    const firstCode = studentCodes.length > 0 ? studentCodes[0] : (userData.code ? userData.code.toString() : (userData.ncode ? userData.ncode.toString() : null));
 
                     allRowsData.push({
                         uid: uid,
                         fullName: userData.fullName || 'بدون اسم',
                         phone: userData.phoneNumber || '---',
                         code: studentCodes,
+                        firstCode: firstCode,
                         calculatedJoinDate: displayDate,
                         processedMonths: processedMonths,
                         month3Expiry: month3Expiry,
@@ -916,10 +1006,16 @@
                             <span id="status-text-${row.uid}" class="status-text ${statusClass}">${statusText}</span>
                         </td>
                         <td style="text-align:center;">
-                            <button class="toggle-btn" onclick="toggleDetails('${row.uid}', this)">
+                            <button class="toggle-btn" onclick="toggleDetails('${row.uid}', this)" title="تفاصيل الطالب">
                                 <i class="fas fa-chevron-down"></i>
                             </button>
                             <br>
+                            ${row.firstCode ? `
+                            <button class="btn-add-code barcode-btn" onclick="showBarcodeDirectly('${row.firstCode}', '${row.email}')" style="background-color: #27ae60; margin-top: 5px;" title="عرض الباركود">
+                                <i class="fas fa-barcode"></i> باركود
+                            </button>
+                            <br>
+                            ` : ''}
                             <button class="btn-add-code change-password-btn" style="background-color: var(--primary-color); margin-top: 5px;" onclick="openChangePasswordModal('${row.uid}', '${row.email}')" title="تغيير كلمة السر">
                                 <i class="fas fa-key"></i> كلمة السر
                             </button>
@@ -1205,6 +1301,101 @@
         window.closeChangePasswordModal = function () {
             document.getElementById('changePasswordModal').style.display = 'none';
         };
+
+        let currentBarcodeCode = '';
+        let currentBarcodeDisplayValue = true;
+
+        window.showBarcodeDirectly = function (code, email) {
+            if (!code || code === 'null' || code === 'undefined') {
+                alert("لا يوجد كود متاح لهذا الطالب!");
+                return;
+            }
+            currentBarcodeCode = code;
+            currentBarcodeDisplayValue = true;
+
+            const emailElem = document.getElementById('barcode-student-email');
+            if (emailElem) emailElem.textContent = email || '';
+
+            // Reset button text
+            const toggleBtn = document.getElementById('toggle-barcode-text-btn');
+            if (toggleBtn) {
+                toggleBtn.innerHTML = '<i class="fas fa-eye-slash"></i> إخفاء الأرقام';
+            }
+
+            // Draw barcode
+            setTimeout(() => {
+                try {
+                    JsBarcode("#barcode", code, {
+                        format: "CODE128",
+                        lineColor: "#2d3436",
+                        width: 2.2,
+                        height: 100,
+                        displayValue: true,
+                        textPosition: "bottom",
+                        fontOptions: "bold",
+                        fontSize: 16
+                    });
+                } catch (e) {
+                    console.error("Barcode error:", e);
+                    alert("فشل توليد الباركود للكود: " + code);
+                }
+            }, 50);
+
+            document.getElementById('barcode-modal').style.display = 'flex';
+        };
+
+        window.toggleBarcodeValue = function () {
+            if (!currentBarcodeCode) return;
+            currentBarcodeDisplayValue = !currentBarcodeDisplayValue;
+
+            try {
+                JsBarcode("#barcode", currentBarcodeCode, {
+                    format: "CODE128",
+                    lineColor: "#2d3436",
+                    width: 2.2,
+                    height: 100,
+                    displayValue: currentBarcodeDisplayValue,
+                    textPosition: "bottom",
+                    fontOptions: "bold",
+                    fontSize: 16
+                });
+            } catch (e) {
+                console.error("Barcode error:", e);
+            }
+
+            const toggleBtn = document.getElementById('toggle-barcode-text-btn');
+            if (toggleBtn) {
+                if (currentBarcodeDisplayValue) {
+                    toggleBtn.innerHTML = '<i class="fas fa-eye-slash"></i> إخفاء الأرقام';
+                } else {
+                    toggleBtn.innerHTML = '<i class="fas fa-eye"></i> إظهار الأرقام';
+                }
+            }
+        };
+
+        window.closeBarcodeModal = function () {
+            document.getElementById('barcode-modal').style.display = 'none';
+        };
+
+        document.addEventListener('DOMContentLoaded', () => {
+            document.querySelectorAll('.close-modal, .close-modal-btn').forEach(btn => {
+                btn.addEventListener('click', (e) => {
+                    const modalElement = e.target.closest('.modal');
+                    if (modalElement) modalElement.style.display = 'none';
+                });
+            });
+
+            const toggleBarcodeBtn = document.getElementById('toggle-barcode-text-btn');
+            if (toggleBarcodeBtn) {
+                toggleBarcodeBtn.addEventListener('click', window.toggleBarcodeValue);
+            }
+        });
+
+        window.addEventListener('click', (e) => {
+            if (e.target.classList.contains('modal')) {
+                e.target.style.display = 'none';
+            }
+        });
 
         window.saveUserPassword = async function () {
             const userId = document.getElementById('change-password-user-id').value;
