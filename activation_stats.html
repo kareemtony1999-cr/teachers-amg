@@ -626,19 +626,20 @@
                 <table id="dataTable">
                     <thead>
                         <tr>
-                            <th width="5%">#</th>
-                            <th width="18%">اسم الطالب</th>
-                            <th width="10%">الكود</th>
-                            <th width="20%">الشهور المتاحة</th>
-                            <th width="12%">رقم الهاتف</th>
-                            <th width="15%">تاريخ آخر تفعيل</th>
-                            <th width="12%">الحالة</th>
-                            <th width="8%">إجراءات</th>
+                            <th width="4%">#</th>
+                            <th width="15%">اسم الطالب</th>
+                            <th width="9%">الكود</th>
+                            <th width="16%">الشهور المتاحة</th>
+                            <th width="11%">هاتف الطالب</th>
+                            <th width="11%">هاتف ولي الأمر</th>
+                            <th width="13%">تاريخ آخر تفعيل</th>
+                            <th width="9%">الحالة</th>
+                            <th width="12%">إجراءات</th>
                         </tr>
                     </thead>
                     <tbody id="tableBody">
                         <tr>
-                            <td colspan="8" class="status-msg">جاري تحميل البيانات...</td>
+                            <td colspan="9" class="status-msg">جاري تحميل البيانات...</td>
                         </tr>
                     </tbody>
                 </table>
@@ -916,6 +917,7 @@
                         uid: uid,
                         fullName: userData.fullName || 'بدون اسم',
                         phone: userData.phoneNumber || '---',
+                        parentPhone: userData.parentPhoneNumber || userData.parentPhone || '---',
                         code: studentCodes,
                         firstCode: firstCode,
                         calculatedJoinDate: displayDate,
@@ -932,7 +934,7 @@
 
             } catch (error) {
                 console.error("Error:", error);
-                document.getElementById('tableBody').innerHTML = `<tr><td colspan="8" class="status-msg" style="color:red">خطأ: ${error.message}</td></tr>`;
+                document.getElementById('tableBody').innerHTML = `<tr><td colspan="9" class="status-msg" style="color:red">خطأ: ${error.message}</td></tr>`;
             }
         }
 
@@ -948,7 +950,7 @@
             allRowsData.forEach(row => {
                 const codesSearchStr = Array.isArray(row.code) ? row.code.join(' ') : row.code;
                 const monthsString = row.processedMonths.map(m => m.name).join(' ');
-                const searchString = `${row.fullName} ${codesSearchStr} ${row.phone} ${monthsString}`.toLowerCase();
+                const searchString = `${row.fullName} ${codesSearchStr} ${row.phone} ${row.parentPhone} ${monthsString}`.toLowerCase();
 
                 if (searchTerm && !searchString.includes(searchTerm)) return;
 
@@ -997,6 +999,7 @@
                         <td style="font-family:monospace; font-weight:bold; line-height: 1.5;">${codesHtml}</td> 
                         <td>${monthsHtml}</td> 
                         <td style="direction:ltr; text-align:right;">${row.phone}</td>
+                        <td style="direction:ltr; text-align:right;">${row.parentPhone}</td>
                         <td>${dateBadge}</td>
                         <td style="text-align: center;">
                             <label class="switch">
@@ -1026,7 +1029,7 @@
                         </td>
                     </tr>
                     <tr id="details-${row.uid}" class="details-row">
-                        <td colspan="8" style="padding: 0;">
+                        <td colspan="9" style="padding: 0;">
                             <div class="details-content">
                                 <div>
                                     <span style="font-weight:bold; color:#555;">الإيميل: </span>
@@ -1036,6 +1039,10 @@
                                     <span style="font-weight:bold; color:#555;">كلمة المرور: </span>
                                     <span class="copy-badge" onclick="copyData(this, '${row.password}')">${row.password} <i class="fas fa-copy"></i></span>
                                 </div>
+                                <div>
+                                    <span style="font-weight:bold; color:#555;">هاتف ولي الأمر: </span>
+                                    <span class="copy-badge" onclick="copyData(this, '${row.parentPhone}')">${row.parentPhone} <i class="fas fa-copy"></i></span>
+                                </div>
                             </div>
                         </td>
                     </tr>
@@ -1043,7 +1050,7 @@
             });
 
             if (count === 0) {
-                tableBody.innerHTML = `<tr><td colspan="8" class="status-msg">لا توجد بيانات مطابقة للمدرس: ${activeTeacher}</td></tr>`;
+                tableBody.innerHTML = `<tr><td colspan="9" class="status-msg">لا توجد بيانات مطابقة للمدرس: ${activeTeacher}</td></tr>`;
             } else {
                 tableBody.innerHTML = html;
             }
