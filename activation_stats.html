@@ -823,17 +823,31 @@
         async function initPage() {
             document.getElementById('tableBody').innerHTML = '<tr><td colspan="8" class="status-msg">جاري تحميل البيانات...</td></tr>';
             try {
-                const [usersSnap, monthsSnap, accessSnap, codesSnap] = await Promise.all([
+                const [usersSnap, monthsSnap, accessSnap, codesSnap, linkSnap] = await Promise.all([
                     db.ref('users').once('value'),
                     db.ref('months').once('value'),
                     db.ref('student_month_access').once('value'),
-                    db.ref('codes').once('value')
+                    db.ref('codes').once('value'),
+                    db.ref(`teacher_links/${activeTeacher}`).once('value')
                 ]);
 
                 const usersObj = usersSnap.val() || {};
                 const monthsObj = monthsSnap.val() || {};
                 const accessObj = accessSnap.val() || {};
                 const codesObj = codesSnap.val() || {};
+
+                // Get linked subordinate teachers
+                let linkedTeachers = [];
+                if (linkSnap && linkSnap.exists()) {
+                    const val = linkSnap.val();
+                    const list = Array.isArray(val) ? val : (typeof val === 'object' ? Object.keys(val) : [val]);
+                    list.forEach(t => {
+                        if (t && t !== activeTeacher && !linkedTeachers.includes(t)) {
+                            linkedTeachers.push(t);
+                        }
+                    });
+                }
+                const allowedYears = [activeTeacher, ...linkedTeachers];
 
                 let monthDetailsMap = {};
                 for (const [tName, tMonths] of Object.entries(monthsObj)) {
@@ -859,7 +873,7 @@
                 const now = Date.now();
 
                 for (const [uid, userData] of Object.entries(usersObj)) {
-                    if (userData.year !== activeTeacher) continue;
+                    if (!allowedYears.includes(userData.year)) continue;
 
                     let displayDate = null;
                     let processedMonths = [];
@@ -871,7 +885,7 @@
 
                         for (const [monthId, expiryDate] of Object.entries(userAccess)) {
                             const monthInfo = monthDetailsMap[monthId];
-                            if (monthInfo && monthInfo.teacher === activeTeacher) {
+                            if (monthInfo && allowedYears.includes(monthInfo.teacher)) {
                                 const isThird = monthInfo.name.includes("3") || monthInfo.name.includes("تالت");
                                 if (isThird && expiryDate > now) {
                                     month3Expiry = expiryDate;
@@ -884,7 +898,7 @@
 
                         for (const [monthId, expiryDate] of Object.entries(userAccess)) {
                             const monthInfo = monthDetailsMap[monthId];
-                            if (monthInfo && monthInfo.teacher === activeTeacher) {
+                            if (monthInfo && allowedYears.includes(monthInfo.teacher)) {
                                 let remainingDays = Math.ceil((expiryDate - now) / (1000 * 60 * 60 * 24));
                                 if (remainingDays < 0) remainingDays = 0;
 
@@ -1158,7 +1172,17 @@
 
                 const codeData = codeSnap.val();
 
-                if (codeData.server !== activeTeacher) {
+                let allowedServers = [activeTeacher];
+                try {
+                    const linkSnap = await db.ref(`teacher_links/${activeTeacher}`).once('value');
+                    if (linkSnap.exists()) {
+                        const val = linkSnap.val();
+                        const list = Array.isArray(val) ? val : (typeof val === 'object' ? Object.keys(val) : [val]);
+                        list.forEach(t => { if (t && t !== activeTeacher && !allowedServers.includes(t)) allowedServers.push(t); });
+                    }
+                } catch(e) {}
+
+                if (!allowedServers.includes(codeData.server)) {
                     alert(`❌ خطأ: هذا الكود مخصص لـ (${codeData.server || 'غير معروف'}) ولا يمكن استخدامه لطالب في (${activeTeacher})!`);
                     return;
                 }
