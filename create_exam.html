@@ -260,43 +260,60 @@
                 saveBtn.classList.remove('btn-disabled');
                 saveBtn.innerHTML = '<i class="fas fa-save"></i> حفظ الامتحان';
                 
-                yearSelect.innerHTML = '<option value="" disabled selected>-- جاري التحقق من الصلاحيات (tea)... --</option>';
+                yearSelect.innerHTML = '<option value="" disabled selected>-- جاري التحقق من الصلاحيات... --</option>';
                 
                 try {
-                     const userTeaRef = ref(db, `tea/${user.uid}`);
-                     const teaSnapshot = await get(userTeaRef);
+                     // 1. تحقق أولاً من أن المستخدم مشرف (Admin)
+                     const adminRef = ref(db, `admins/${user.uid}`);
+                     const adminSnapshot = await get(adminRef);
                      
-                     if (teaSnapshot.exists()) {
-                         yearSelect.innerHTML = '<option value="" disabled selected>-- اختر السنة/المدرس --</option>';
-                         
-                         const teaVal = teaSnapshot.val();
-                         let teachers = [];
-                         
-                         if (typeof teaVal === 'string') {
-                             teachers = teaVal.split('.').map(t => t.trim()).filter(t => t !== '');
-                         } else {
-                             teachers = [String(teaVal)];
-                         }
-
-                         teachers.forEach(t => {
-                            let opt = document.createElement('option');
-                            opt.value = t; opt.textContent = t;
-                            yearSelect.appendChild(opt);
-                         });
-
-                         yearSelect.addEventListener('change', (e) => loadMonths(e.target.value));
-                         
-                         if (teachers.length === 1) {
-                             yearSelect.value = teachers[0];
-                             loadMonths(teachers[0]);
-                         }
-
-                         addQuestionUI();
+                     let teachers = [];
+                     let isAuthorized = false;
+                     
+                     if (adminSnapshot.exists()) {
+                          isAuthorized = true;
+                          // المشرف لديه صلاحية على جميع السيرفرات (25 مدرس)
+                          for (let i = 1; i <= 25; i++) {
+                              teachers.push(`مدرس ${i}`);
+                          }
                      } else {
-                         yearSelect.innerHTML = '<option disabled>حسابك غير مسجل كمدرس (tea)</option>';
+                          // 2. إذا لم يكن مشرفاً، تحقق من أنه مدرس (tea)
+                          const userTeaRef = ref(db, `tea/${user.uid}`);
+                          const teaSnapshot = await get(userTeaRef);
+                          
+                          if (teaSnapshot.exists()) {
+                              isAuthorized = true;
+                              const teaVal = teaSnapshot.val();
+                              if (typeof teaVal === 'string') {
+                                  teachers = teaVal.split('.').map(t => t.trim()).filter(t => t !== '');
+                              } else {
+                                  teachers = [String(teaVal)];
+                              }
+                          }
                      }
+                     
+                     if (isAuthorized) {
+                          yearSelect.innerHTML = '<option value="" disabled selected>-- اختر السنة/المدرس --</option>';
+                          
+                          teachers.forEach(t => {
+                             let opt = document.createElement('option');
+                             opt.value = t; opt.textContent = t;
+                             yearSelect.appendChild(opt);
+                          });
+
+                          yearSelect.addEventListener('change', (e) => loadMonths(e.target.value));
+                          
+                          if (teachers.length === 1) {
+                              yearSelect.value = teachers[0];
+                              loadMonths(teachers[0]);
+                          }
+
+                          addQuestionUI();
+                      } else {
+                          yearSelect.innerHTML = '<option disabled>حسابك غير مسجل كمشرف أو مدرس</option>';
+                      }
                 } catch (e) {
-                    console.error("Error fetching teacher data:", e);
+                    console.error("Error fetching authorization data:", e);
                     if (e.message && e.message.includes("permission_denied")) {
                         yearSelect.innerHTML = '<option disabled style="color:red">خطأ: لا تملك صلاحية القراءة (تأكد من Rules)</option>';
                         alert("عفواً، قاعدة البيانات ترفض الوصول. يرجى التأكد من تعديل الـ Realtime Database Rules في Firebase Console.");
@@ -638,9 +655,25 @@
 
                 await set(ref(db, `exams/${yearKey}/${examId}`), examData);
 
+                // Auto-sync to linked teachers
+                try {
+                    const linkSnapshot = await get(ref(db, `teacher_links/${yearKey}`));
+                    if (linkSnapshot.exists()) {
+                        const linked = linkSnapshot.val();
+                        const targets = Array.isArray(linked) ? linked : (typeof linked === 'object' ? Object.keys(linked) : [linked]);
+                        for (const targetTeacher of targets) {
+                            if (targetTeacher && targetTeacher !== yearKey) {
+                                await set(ref(db, `exams/${targetTeacher}/${examId}`), examData);
+                            }
+                        }
+                    }
+                } catch (syncErr) {
+                    console.error("Auto sync exam error:", syncErr);
+                }
+
                 loadingText.innerText = 'تم الحفظ!';
                 setTimeout(() => {
-                    alert('✅ تم حفظ الامتحان بنجاح!');
+                    alert('✅ تم حفظ الامتحان بنجاح ومزامنة المدرسين المربوطين!');
                     window.location.reload();
                 }, 1000);
 

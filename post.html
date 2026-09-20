@@ -526,11 +526,28 @@
 
                 await postRef.set(postData);
 
+                // Auto-sync to linked teachers
+                try {
+                    const linkSnap = await db.ref(`teacher_links/${server}`).once('value');
+                    if (linkSnap.exists()) {
+                        const linked = linkSnap.val();
+                        const targets = Array.isArray(linked) ? linked : (typeof linked === 'object' ? Object.keys(linked) : [linked]);
+                        for (const targetTeacher of targets) {
+                            if (targetTeacher && targetTeacher !== server) {
+                                const targetPostRef = db.ref(`posts/${targetTeacher}/${postId}`);
+                                await targetPostRef.set(postData);
+                            }
+                        }
+                    }
+                } catch (syncErr) {
+                    console.error("Auto sync post error:", syncErr);
+                }
+
                 circlePath.setAttribute('stroke-dasharray', '100, 100');
                 overlayPercentage.textContent = '100%';
                 
                 setTimeout(() => {
-                    alert('تم نشر البوست بنجاح!');
+                    alert('تم نشر البوست بنجاح ومزامنة المدرسين المربوطين!');
                     // Reset
                     document.getElementById('postContent').value = '';
                     imageFile.value = '';
