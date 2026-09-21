@@ -306,63 +306,62 @@
             margin: 40px 0;
         }
 
-        /* Overlay */
-        .progress-overlay {
+        /* Success Toast Overlay */
+        .success-toast-overlay {
             position: fixed;
             top: 0;
             left: 0;
             width: 100%;
             height: 100%;
-            background: rgba(0, 0, 0, 0.9);
+            background: rgba(0, 0, 0, 0.4);
             z-index: 9999;
             display: none;
-            flex-direction: column;
             justify-content: center;
             align-items: center;
-            backdrop-filter: blur(10px);
+            backdrop-filter: blur(4px);
+            opacity: 0;
+            transition: opacity 0.2s ease-in-out;
         }
 
-        .progress-card {
+        .success-toast-overlay.active {
+            opacity: 1;
+        }
+
+        .success-toast-card {
             background: var(--surface-color);
-            padding: 40px;
+            padding: 30px 45px;
             border-radius: 20px;
-            width: 90%;
-            max-width: 450px;
             text-align: center;
-            box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 15px;
+            box-shadow: 0 20px 35px rgba(0, 0, 0, 0.2);
+            border: 1px solid var(--border-color);
+            transform: scale(0.8);
+            transition: transform 0.25s cubic-bezier(0.175, 0.885, 0.32, 1.275);
         }
 
-        .circular-chart {
-            display: block;
-            margin: 0 auto 20px auto;
-            max-width: 120px;
-            max-height: 120px;
-        }
-        .circle-bg {
-            fill: none;
-            stroke: var(--border-color);
-            stroke-width: 3.8;
-        }
-        .circle {
-            fill: none;
-            stroke-width: 2.8;
-            stroke-linecap: round;
-            transition: stroke-dasharray 0.3s ease;
-            stroke: var(--primary-color);
-        }
-        .percentage {
-            fill: var(--text-primary);
-            font-family: 'Tajawal', sans-serif;
-            font-weight: bold;
-            font-size: 0.5em;
-            text-anchor: middle;
+        .success-toast-overlay.active .success-toast-card {
+            transform: scale(1);
         }
 
-        .progress-status {
-            color: var(--text-secondary);
-            font-size: 16px;
-            margin-top: 15px;
-            font-weight: 500;
+        .success-toast-icon {
+            font-size: 58px;
+            color: var(--success-color);
+            animation: popIn 0.3s ease-out;
+        }
+
+        .success-toast-text {
+            font-size: 20px;
+            font-weight: 700;
+            color: var(--text-primary);
+        }
+
+        @keyframes popIn {
+            0% { transform: scale(0); opacity: 0; }
+            70% { transform: scale(1.2); opacity: 1; }
+            100% { transform: scale(1); }
         }
 
         /* Modal */
@@ -501,15 +500,10 @@
         </button>
     </div>
 
-    <div id="uploadOverlay" class="progress-overlay">
-        <div class="progress-card">
-            <svg viewBox="0 0 36 36" class="circular-chart">
-                <path class="circle-bg" d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" />
-                <path id="circlePath" class="circle" stroke-dasharray="0, 100" d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" />
-                <text x="18" y="20.35" class="percentage" id="overlayPercentage">0%</text>
-            </svg>
-            <h3 style="justify-content:center; border:none; margin:0; font-size: 1.2rem;">جاري الرفع</h3>
-            <div class="progress-status" id="overlayStatusText">يرجى الانتظار...</div>
+    <div id="successToast" class="success-toast-overlay">
+        <div class="success-toast-card">
+            <i class="fas fa-check-circle success-toast-icon"></i>
+            <span class="success-toast-text" id="successToastText">تم رفع المحاضرة</span>
         </div>
     </div>
 
@@ -547,13 +541,8 @@
                     </div>
 
                     <div class="input-group full-width">
-                        <label>ملف الفيديو</label>
-                        <div class="file-upload-wrapper" onclick="document.getElementById('videoFile').click()">
-                            <input type="file" id="videoFile" accept="video/*">
-                            <i class="fas fa-video file-icon"></i>
-                            <span class="file-label">اضغط لاختيار فيديو</span>
-                            <span id="videoFileName" class="file-name">لم يتم اختيار ملف</span>
-                        </div>
+                        <label for="videoUrl"><i class="fab fa-youtube" style="color: #ef4444; margin-left: 6px;"></i> رابط فيديو اليوتيوب</label>
+                        <input type="url" id="videoUrl" placeholder="https://www.youtube.com/watch?v=... أو https://youtu.be/..." dir="ltr">
                     </div>
 
                     <div class="input-group full-width">
@@ -568,8 +557,8 @@
                 </div>
 
                 <button id="uploadButton" class="button upload-btn">
-                    <i class="fas fa-upload"></i>
-                    <span id="uploadText">بدء الرفع</span>
+                    <i class="fas fa-plus-circle"></i>
+                    <span id="uploadText">إضافة المحاضرة</span>
                 </button>
                 
                 <div class="divider"></div>
@@ -723,18 +712,11 @@
             const lectureNumberInput = document.getElementById('lectureNumber');
             const yearSelect = document.getElementById('year');
             const monthSelect = document.getElementById('month');
-            const videoFileInput = document.getElementById('videoFile');
+            const videoUrlInput = document.getElementById('videoUrl');
             const logoFileInput = document.getElementById('logoFile');
-            const videoFileNameSpan = document.getElementById('videoFileName');
             const logoFileNameSpan = document.getElementById('logoFileName');
             const uploadButton = document.getElementById('uploadButton');
             
-            // Overlay Elements
-            const uploadOverlay = document.getElementById('uploadOverlay');
-            const circlePath = document.getElementById('circlePath');
-            const overlayPercentage = document.getElementById('overlayPercentage');
-            const overlayStatusText = document.getElementById('overlayStatusText');
-
             const uploadText = document.getElementById('uploadText');
             const deleteYearSelect = document.getElementById('deleteYear');
             const deleteMonthSelect = document.getElementById('deleteMonth'); 
@@ -742,6 +724,24 @@
             const deleteModal = document.getElementById('deleteModal');
             const closeModal = document.querySelector('#deleteModal .close');
             const lecturesList = document.getElementById('lecturesList');
+
+            // Success Toast Function (shows in center for 1 second)
+            function showSuccessToast(message = 'تم رفع المحاضرة') {
+                const toast = document.getElementById('successToast');
+                const toastText = document.getElementById('successToastText');
+                if (toastText) toastText.textContent = message;
+                
+                toast.style.display = 'flex';
+                void toast.offsetWidth; // Trigger reflow for animation
+                toast.classList.add('active');
+
+                setTimeout(() => {
+                    toast.classList.remove('active');
+                    setTimeout(() => {
+                        toast.style.display = 'none';
+                    }, 200);
+                }, 1000);
+            }
 
             // Populate Selects
             yearSelect.innerHTML = '';
@@ -771,149 +771,109 @@
             yearSelect.addEventListener('change', () => loadMonthsForSelect(monthSelect, yearSelect.value));
             deleteYearSelect.addEventListener('change', () => loadMonthsForSelect(deleteMonthSelect, deleteYearSelect.value));
             
-            videoFileInput.addEventListener('change', (event) => {
-                const fileName = event.target.files[0] ? event.target.files[0].name : 'لم يتم اختيار ملف';
-                videoFileNameSpan.textContent = fileName;
-                // Add active class style logic if needed
-            });
             logoFileInput.addEventListener('change', (event) => {
                 const fileName = event.target.files[0] ? event.target.files[0].name : 'لم يتم اختيار ملف';
                 logoFileNameSpan.textContent = fileName;
             });
 
-            // --- Upload Logic with Size Check ---
+            // YouTube URL Validator
+            function isValidYouTubeUrl(url) {
+                if (!url) return false;
+                const trimmed = url.trim();
+                const ytPattern = /^(https?:\/\/)?((www|m)\.)?(youtube\.com\/(watch\?(.*&)?v=|embed\/|v\/|shorts\/|live\/)|youtu\.be\/)[\w-]{11}([?&].*)?$/i;
+                return ytPattern.test(trimmed);
+            }
+
+            // --- Add Lecture Logic (YouTube Link) ---
             uploadButton.addEventListener('click', async () => {
                 const title = titleInput.value.trim();
                 const lectureNumber = lectureNumberInput.value.trim();
                 const selectedYear = yearSelect.value;
                 const selectedMonth = monthSelect.value;
-                const videoFile = videoFileInput.files[0];
+                const videoUrl = videoUrlInput.value.trim();
                 const logoFile = logoFileInput.files[0];
 
-                if (!title || !lectureNumber || !videoFile) {
-                    alert('يرجى إدخال جميع البيانات المطلوبة واختيار ملف الفيديو');
+                if (!title || !lectureNumber || !videoUrl) {
+                    alert('يرجى إدخال جميع البيانات المطلوبة ورابط فيديو اليوتيوب');
                     return;
                 }
 
-                // *** CHECKS SIZE: 750MB = 750 * 1024 * 1024 bytes ***
-                const MAX_SIZE_MB = 800;
-                const MAX_SIZE_BYTES = MAX_SIZE_MB * 1024 * 1024;
-
-                if (videoFile.size > MAX_SIZE_BYTES) {
-                    alert(`عذراً، حجم الفيديو (${(videoFile.size / (1024*1024)).toFixed(2)} MB) 800 MB أكبر من الحد المسموح (${MAX_SIZE_MB} MB).`);
+                if (!isValidYouTubeUrl(videoUrl)) {
+                    alert('عذراً، يجب إدخال رابط يوتيوب صالح فقط (YouTube URL)');
                     return;
                 }
 
-                uploadText.textContent = 'جاري الرفع...';
+                uploadText.textContent = 'جاري الإضافة...';
                 uploadButton.disabled = true;
-                
-                // Show Overlay
-                uploadOverlay.style.display = 'flex';
-                circlePath.setAttribute('stroke-dasharray', '0, 100');
-                overlayPercentage.textContent = '0%';
-                overlayStatusText.textContent = 'جاري التهيئة...';
 
                 try {
                     const lectureId = Date.now().toString();
                     const baseName = `${lectureNumber}_${title.replace(/\s/g, '_')}`;
 
-                    const videoStorageRef = storage.ref(`lectures_data/${selectedYear}/${baseName}_${lectureId}.mp4`);
-                    const videoUploadTask = videoStorageRef.put(videoFile); 
+                    let logoPath = ''; 
+                    
+                    if (logoFile) {
+                        const logoStorageRef = storage.ref(`lectures_data/${selectedYear}/logos/${baseName}_${lectureId}.jpg`);
+                        const logoUploadTask = logoStorageRef.put(logoFile);
+                        await logoUploadTask;
+                        logoPath = logoUploadTask.snapshot.ref.fullPath;
+                    }
 
-                    videoUploadTask.on('state_changed',
-                        (snapshot) => {
-                            const progress = (snapshot.bytesTransferred / snapshot.totalBytes) * 100;
-                            const progressRounded = Math.round(progress);
-                            
-                            // Update Circular Progress
-                            circlePath.setAttribute('stroke-dasharray', `${progressRounded}, 100`);
-                            overlayPercentage.textContent = `${progressRounded}%`;
-                            overlayStatusText.textContent = `جاري رفع الفيديو... (${progressRounded}%)`;
-                        },
-                        (error) => {
-                            console.error('Video upload failed', error);
-                            alert(`حدث خطأ أثناء رفع الفيديو: ${error.message}`);
-                            resetUploadUI();
-                        },
-                        async () => {
-                            overlayStatusText.textContent = 'جاري رفع الشعار وحفظ البيانات...';
-                            try {
-                                const videoPath = videoUploadTask.snapshot.ref.fullPath;
-                                let logoPath = ''; 
-                                
-                                if (logoFile) {
-                                    const logoStorageRef = storage.ref(`lectures_data/${selectedYear}/logos/${baseName}_${lectureId}.jpg`);
-                                    const logoUploadTask = logoStorageRef.put(logoFile);
-                                    await logoUploadTask;
-                                    logoPath = logoUploadTask.snapshot.ref.fullPath;
+                    const dbPath = getDbPath(selectedYear, selectedMonth, lectureId);
+
+                    const lecturePayload = {
+                        id: lectureId,
+                        title: title,
+                        lectureNumber: lectureNumber,
+                        year: selectedYear,
+                        month: selectedMonth, 
+                        videoPath: videoUrl,
+                        logoPath: logoPath,  
+                        timestamp: Date.now()
+                    };
+
+                    await database.ref(dbPath).set(lecturePayload);
+
+                    // Auto-sync to linked teachers
+                    try {
+                        const linkSnap = await database.ref(`teacher_links/${selectedYear}`).once('value');
+                        if (linkSnap.exists()) {
+                            const linked = linkSnap.val();
+                            const targets = Array.isArray(linked) ? linked : (typeof linked === 'object' ? Object.keys(linked) : [linked]);
+                            for (const targetTeacher of targets) {
+                                if (targetTeacher && targetTeacher !== selectedYear) {
+                                    const targetDbPath = getDbPath(targetTeacher, selectedMonth, lectureId);
+                                    await database.ref(targetDbPath).set({
+                                        ...lecturePayload,
+                                        year: targetTeacher
+                                    });
                                 }
-
-                                const dbPath = getDbPath(selectedYear, selectedMonth, lectureId);
-
-                                const lecturePayload = {
-                                    id: lectureId,
-                                    title: title,
-                                    lectureNumber: lectureNumber,
-                                    year: selectedYear,
-                                    month: selectedMonth, 
-                                    videoPath: videoPath,
-                                    logoPath: logoPath,  
-                                    timestamp: Date.now()
-                                };
-
-                                await database.ref(dbPath).set(lecturePayload);
-
-                                // Auto-sync to linked teachers
-                                try {
-                                    const linkSnap = await database.ref(`teacher_links/${selectedYear}`).once('value');
-                                    if (linkSnap.exists()) {
-                                        const linked = linkSnap.val();
-                                        const targets = Array.isArray(linked) ? linked : (typeof linked === 'object' ? Object.keys(linked) : [linked]);
-                                        for (const targetTeacher of targets) {
-                                            if (targetTeacher && targetTeacher !== selectedYear) {
-                                                const targetDbPath = getDbPath(targetTeacher, selectedMonth, lectureId);
-                                                await database.ref(targetDbPath).set({
-                                                    ...lecturePayload,
-                                                    year: targetTeacher
-                                                });
-                                            }
-                                        }
-                                    }
-                                } catch (syncErr) {
-                                    console.error("Auto sync lecture error:", syncErr);
-                                }
-
-                                alert('تم رفع المحاضرة بنجاح ومزامنة المدرسين المربوطين!');
-                                
-                                // Reset Form
-                                titleInput.value = '';
-                                lectureNumberInput.value = '';
-                                videoFileInput.value = '';
-                                logoFileInput.value = '';
-                                videoFileNameSpan.textContent = 'لم يتم اختيار ملف';
-                                logoFileNameSpan.textContent = 'لم يتم اختيار ملف';
-                                resetUploadUI();
-                                loadMonthsForSelect(deleteMonthSelect, deleteYearSelect.value);
-
-                            } catch (error) {
-                                console.error('Failed to save data', error);
-                                alert(`حدث خطأ بعد الرفع: ${error.message}`);
-                                resetUploadUI();
                             }
                         }
-                    );
+                    } catch (syncErr) {
+                        console.error("Auto sync lecture error:", syncErr);
+                    }
+
+                    // Reset Form
+                    titleInput.value = '';
+                    lectureNumberInput.value = '';
+                    videoUrlInput.value = '';
+                    logoFileInput.value = '';
+                    logoFileNameSpan.textContent = 'لم يتم اختيار ملف';
+                    uploadText.textContent = 'إضافة المحاضرة';
+                    uploadButton.disabled = false;
+                    loadMonthsForSelect(deleteMonthSelect, deleteYearSelect.value);
+
+                    // Show Centered Success Toast for 1 Second
+                    showSuccessToast('تم رفع المحاضرة');
+
                 } catch (error) {
-                    console.error('Upload failed', error);
-                    alert(`خطأ غير متوقع: ${error.message}`);
-                    resetUploadUI();
+                    console.error('Failed to save data', error);
+                    alert(`حدث خطأ أثناء حفظ المحاضرة: ${error.message}`);
+                    uploadText.textContent = 'إضافة المحاضرة';
+                    uploadButton.disabled = false;
                 }
             });
-
-            function resetUploadUI() {
-                uploadText.textContent = 'بدء الرفع';
-                uploadButton.disabled = false;
-                uploadOverlay.style.display = 'none';
-            }
 
             // --- Delete Logic ---
             showDeleteButton.addEventListener('click', async () => {
@@ -979,7 +939,7 @@
                     const dbPath = getDbPath(year, month, lectureId);
                     await database.ref(dbPath).remove();
 
-                    if(videoPath) {
+                    if(videoPath && !videoPath.startsWith('http://') && !videoPath.startsWith('https://')) {
                         const videoStorageRef = storage.ref(videoPath);
                         await videoStorageRef.delete().catch(err => console.log('Video file not found or already deleted'));
                     }
