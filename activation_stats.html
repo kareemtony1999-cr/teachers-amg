@@ -224,30 +224,6 @@
             font-size: 12px;
         }
 
-        /* ستايل الشهور المنتهية القابلة للتمديد */
-        .month-badge.expired-clickable {
-            background-color: #ffebee;
-            color: #c62828;
-            border: 1px solid #ef9a9a;
-            cursor: pointer;
-            transition: 0.2s;
-            position: relative;
-        }
-
-        .month-badge.expired-clickable:hover {
-            background-color: #ef9a9a;
-            color: white;
-            transform: translateY(-1px);
-        }
-
-        .month-badge.expired-clickable::after {
-            content: '\f304';
-            font-family: 'Font Awesome 5 Free';
-            font-weight: 900;
-            margin-right: 5px;
-            font-size: 10px;
-        }
-
         /* --- إضافات الإيميل والباسورد --- */
         .toggle-btn {
             background: none;
@@ -877,42 +853,53 @@
 
                     let displayDate = null;
                     let processedMonths = [];
-                    let month3Expiry = null;
                     const userAccess = accessObj[uid];
 
                     if (userAccess) {
                         let latestActivation = 0;
 
+                        // Deduplicate months by name, preferring student's current year (userData.year)
+                        const dedupedMonthsMap = new Map();
                         for (const [monthId, expiryDate] of Object.entries(userAccess)) {
                             const monthInfo = monthDetailsMap[monthId];
                             if (monthInfo && allowedYears.includes(monthInfo.teacher)) {
-                                const isThird = monthInfo.name.includes("3") || monthInfo.name.includes("تالت");
-                                if (isThird && expiryDate > now) {
-                                    month3Expiry = expiryDate;
-                                }
+                                const normName = (monthInfo.name || '').trim().toLowerCase();
+                                const isCurrent = (monthInfo.teacher === userData.year);
+                                const candidate = {
+                                    id: monthId,
+                                    name: monthInfo.name,
+                                    teacher: monthInfo.teacher,
+                                    expiryDate: expiryDate,
+                                    isCurrent: isCurrent
+                                };
 
-                                const activationDate = expiryDate - THIRTY_DAYS_MS;
-                                if (activationDate > latestActivation) latestActivation = activationDate;
+                                if (!dedupedMonthsMap.has(normName)) {
+                                    dedupedMonthsMap.set(normName, candidate);
+                                } else {
+                                    const existing = dedupedMonthsMap.get(normName);
+                                    if (isCurrent && !existing.isCurrent) {
+                                        dedupedMonthsMap.set(normName, candidate);
+                                    } else if (isCurrent === existing.isCurrent && expiryDate > existing.expiryDate) {
+                                        dedupedMonthsMap.set(normName, candidate);
+                                    }
+                                }
                             }
                         }
 
-                        for (const [monthId, expiryDate] of Object.entries(userAccess)) {
-                            const monthInfo = monthDetailsMap[monthId];
-                            if (monthInfo && allowedYears.includes(monthInfo.teacher)) {
-                                let remainingDays = Math.ceil((expiryDate - now) / (1000 * 60 * 60 * 24));
-                                if (remainingDays < 0) remainingDays = 0;
+                        for (const monthEntry of dedupedMonthsMap.values()) {
+                            const expiryDate = monthEntry.expiryDate;
+                            const activationDate = expiryDate - THIRTY_DAYS_MS;
+                            if (activationDate > latestActivation) latestActivation = activationDate;
 
-                                const isThird = monthInfo.name.includes("3") || monthInfo.name.includes("تالت");
+                            let remainingDays = Math.ceil((expiryDate - now) / (1000 * 60 * 60 * 24));
+                            if (remainingDays < 0) remainingDays = 0;
 
-                                processedMonths.push({
-                                    id: monthId,
-                                    name: monthInfo.name,
-                                    remaining: remainingDays,
-                                    expiry: expiryDate,
-                                    isThird: isThird,
-                                    isExpiredOrNear: remainingDays <= 10
-                                });
-                            }
+                            processedMonths.push({
+                                id: monthEntry.id,
+                                name: monthEntry.name,
+                                remaining: remainingDays,
+                                expiry: expiryDate
+                            });
                         }
                         if (latestActivation > 0) displayDate = latestActivation;
                     }
@@ -936,7 +923,6 @@
                         firstCode: firstCode,
                         calculatedJoinDate: displayDate,
                         processedMonths: processedMonths,
-                        month3Expiry: month3Expiry,
                         email: userData.email || 'غير متوفر',
                         password: userData.password || 'غير متوفر',
                         isDisabled: userData.isDisabled || false
@@ -973,16 +959,7 @@
                 let monthsHtml = '';
                 if (row.processedMonths.length > 0) {
                     monthsHtml = row.processedMonths.map(m => {
-                        let cssClass = "month-badge";
-                        let onClickAttr = "";
-
-                        // إزالة التلميح نهائيا وتجهيز الكليك المباشر بدون رسائل
-                        if (m.isExpiredOrNear && row.month3Expiry && !m.isThird) {
-                            cssClass += " expired-clickable";
-                            onClickAttr = `onclick="syncMonthExpiry(this, '${row.uid}', '${m.id}', ${row.month3Expiry}, '${m.name}')"`;
-                        }
-
-                        return `<span class="${cssClass}" ${onClickAttr}>${m.name} (${m.remaining} يوم)</span>`;
+                        return `<span class="month-badge">${m.name} (${m.remaining} يوم)</span>`;
                     }).join('');
                 } else {
                     monthsHtml = '<span class="no-date">--</span>';
@@ -1224,55 +1201,8 @@
             }
         };
 
-        // --- دالة التمديد (بمجرد الدوس وبدون رسائل وبدون ريفريش للصفحة) ---
-        window.syncMonthExpiry = async function (element, uid, monthId, targetExpiry, monthName) {
-            try {
-                // منع الضغط المتكرر أثناء إرسال البيانات للقاعدة
-                element.style.pointerEvents = "none";
-                element.style.opacity = "0.7";
-
-                // تحديث قاعدة البيانات في الخلفية
-                await db.ref(`student_month_access/${uid}/${monthId}`).set(targetExpiry);
-
-                // تحديث البيانات في المصفوفة محلياً 
-                const userRow = allRowsData.find(u => u.uid === uid);
-                if (userRow) {
-                    const monthObj = userRow.processedMonths.find(m => m.id === monthId);
-                    if (monthObj) {
-                        const now = Date.now();
-                        let remainingDays = Math.ceil((targetExpiry - now) / (1000 * 60 * 60 * 24));
-                        if (remainingDays < 0) remainingDays = 0;
-
-                        monthObj.expiry = targetExpiry;
-                        monthObj.remaining = remainingDays;
-                        monthObj.isExpiredOrNear = remainingDays <= 10;
-                    }
-                }
-
-                // تحديث شكل الزر فوراً في الصفحة أمام المستخدم 
-                const now = Date.now();
-                let newRemaining = Math.ceil((targetExpiry - now) / (1000 * 60 * 60 * 24));
-                if (newRemaining < 0) newRemaining = 0;
-
-                element.className = "month-badge"; // إزالة اللون الأحمر وجعله شهر عادي
-                element.innerHTML = `${monthName} (${newRemaining} يوم)`;
-                element.removeAttribute('onclick'); // إزالة خاصية الكليك
-                element.style.pointerEvents = "auto";
-                element.style.opacity = "1";
-
-                // إظهار رسالة النجاح المنبثقة من تحت
-                showSuccessToast();
-
-            } catch (error) {
-                console.error("Error syncing expiry:", error);
-                alert("حدث خطأ أثناء التحديث.");
-                element.style.pointerEvents = "auto";
-                element.style.opacity = "1";
-            }
-        };
-
         // دالة إظهار الـ Toast الخاص بالنجاح
-        function showSuccessToast(message = "تم التمديد بنجاح") {
+        function showSuccessToast(message = "تمت العملية بنجاح") {
             const toast = document.getElementById('customToast');
             if (toast) {
                 toast.innerHTML = `<i class="fas fa-check-circle" style="font-size: 18px;"></i> ${message}`;
