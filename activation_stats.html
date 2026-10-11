@@ -363,6 +363,70 @@
             transform: translateY(-1px);
         }
 
+        /* --- ستايلات تزويد الأيام وتغيير الجهاز --- */
+        .btn-day-choice {
+            flex: 1;
+            padding: 10px 5px;
+            border: 2px solid #ddd;
+            background: #f8f9fa;
+            border-radius: 8px;
+            font-weight: bold;
+            cursor: pointer;
+            font-family: 'Tajawal';
+            font-size: 13px;
+            transition: 0.2s;
+            color: #444;
+        }
+
+        .btn-day-choice:hover {
+            border-color: #f39c12;
+            background: #fffdf7;
+        }
+
+        .btn-day-choice.active {
+            border-color: #e67e22;
+            background: #e67e22;
+            color: white;
+        }
+
+        .btn-extend-badge {
+            background-color: #e67e22;
+            color: white;
+            border: none;
+            border-radius: 10px;
+            padding: 2px 7px;
+            cursor: pointer;
+            font-size: 11px;
+            font-family: 'Tajawal';
+            font-weight: bold;
+            margin-right: 5px;
+            transition: 0.2s;
+            display: inline-flex;
+            align-items: center;
+            gap: 3px;
+            vertical-align: middle;
+        }
+
+        .btn-extend-badge:hover {
+            background-color: #d35400;
+            transform: scale(1.05);
+        }
+
+        .tag-extended {
+            background-color: #e8f8f5;
+            color: #27ae60;
+            border: 1px solid #a3e4d7;
+            border-radius: 10px;
+            padding: 2px 7px;
+            font-size: 11px;
+            font-weight: bold;
+            margin-right: 5px;
+            display: inline-flex;
+            align-items: center;
+            gap: 3px;
+            vertical-align: middle;
+        }
+
         /* --- النوافذ المنبثقة (Modals) --- */
         .modal {
             display: none;
@@ -690,6 +754,49 @@
         </div>
     </div>
 
+    <!-- نافذة تزويد الأيام المنبثقة -->
+    <div id="extendDaysModal" class="modal">
+        <div class="modal-content" style="max-width: 440px; width: 90%; text-align: right; padding: 25px; box-sizing: border-box;">
+            <div class="modal-header">
+                <h3 class="modal-title" style="display: flex; align-items: center; gap: 8px; color: #e67e22;">
+                    <i class="fas fa-calendar-plus"></i>
+                    <span>تزويد أيام للطالب</span>
+                </h3>
+                <span class="close-modal" onclick="closeExtendDaysModal()">&times;</span>
+            </div>
+            <div style="margin: 15px 0; font-size: 14px; line-height: 1.8;">
+                <div><strong>الطالب:</strong> <span id="extendStudentName" style="color: var(--primary-color); font-weight: bold;"></span></div>
+                <div id="extendMonthSelectContainer" style="margin-top: 10px;">
+                    <label style="font-weight: bold; display: block; margin-bottom: 5px; color: #555;">الشهر المراد تزويده:</label>
+                    <select id="extendMonthSelect" onchange="onExtendMonthChanged(this.value)" style="width: 100%; padding: 10px; border-radius: 8px; border: 1px solid #ccc; font-family: 'Tajawal'; font-size: 14px; font-weight: bold;"></select>
+                </div>
+                <div id="extendMonthInfo" style="margin-top: 8px; font-size: 13px; color: #666;">
+                    الأيام المتبقية الحالية: <strong id="extendRemainingDays">0</strong> يوم
+                </div>
+            </div>
+
+            <div style="margin: 15px 0;">
+                <label style="font-weight: bold; display: block; margin-bottom: 8px; color: #333;">
+                    عدد الأيام الإضافية:
+                </label>
+                <div style="display: flex; gap: 8px; justify-content: center;">
+                    <button type="button" class="btn-day-choice active" data-days="1" onclick="selectDaysChoice(1)">1 يوم</button>
+                    <button type="button" class="btn-day-choice" data-days="2" onclick="selectDaysChoice(2)">2 يوم</button>
+                    <button type="button" class="btn-day-choice" data-days="3" onclick="selectDaysChoice(3)">3 أيام</button>
+                </div>
+                <input type="hidden" id="selectedExtendDays" value="1">
+            </div>
+
+            <div class="modal-buttons">
+                <button class="modal-btn btn-confirm" id="confirmExtendDaysBtn" style="background-color: #27ae60;" onclick="executeExtendDays()">
+                    <span id="confirm-extend-text"><i class="fas fa-check"></i> تأكيد التزويد</span>
+                    <span id="confirm-extend-loader" class="loading" style="display: none; width: 14px; height: 14px; margin: 0 auto;"></span>
+                </button>
+                <button class="modal-btn btn-cancel" onclick="closeExtendDaysModal()">إلغاء</button>
+            </div>
+        </div>
+    </div>
+
     <div id="customToast">
         <i class="fas fa-check-circle" style="font-size: 18px;"></i> تم التمديد بنجاح
     </div>
@@ -804,24 +911,31 @@
                     db.ref('months').once('value'),
                     db.ref('student_month_access').once('value'),
                     db.ref('codes').once('value'),
-                    db.ref(`teacher_links/${activeTeacher}`).once('value')
+                    db.ref('teacher_links').once('value')
                 ]);
 
                 const usersObj = usersSnap.val() || {};
                 const monthsObj = monthsSnap.val() || {};
                 const accessObj = accessSnap.val() || {};
                 const codesObj = codesSnap.val() || {};
+                const allLinks = (linkSnap && linkSnap.exists()) ? (linkSnap.val() || {}) : {};
 
-                // Get linked subordinate teachers
+                // Get linked subordinate teachers (bidirectional)
                 let linkedTeachers = [];
-                if (linkSnap && linkSnap.exists()) {
-                    const val = linkSnap.val();
+                if (allLinks[activeTeacher]) {
+                    const val = allLinks[activeTeacher];
                     const list = Array.isArray(val) ? val : (typeof val === 'object' ? Object.keys(val) : [val]);
                     list.forEach(t => {
                         if (t && t !== activeTeacher && !linkedTeachers.includes(t)) {
                             linkedTeachers.push(t);
                         }
                     });
+                }
+                for (const [srcT, tgts] of Object.entries(allLinks)) {
+                    const list = Array.isArray(tgts) ? tgts : (typeof tgts === 'object' ? Object.keys(tgts) : [tgts]);
+                    if (list.includes(activeTeacher) && srcT !== activeTeacher && !linkedTeachers.includes(srcT)) {
+                        linkedTeachers.push(srcT);
+                    }
                 }
                 const allowedYears = [activeTeacher, ...linkedTeachers];
 
@@ -925,7 +1039,9 @@
                         processedMonths: processedMonths,
                         email: userData.email || 'غير متوفر',
                         password: userData.password || 'غير متوفر',
-                        isDisabled: userData.isDisabled || false
+                        isDisabled: userData.isDisabled || false,
+                        deviceId: userData.deviceId || '',
+                        monthExtensions: userData.month_extensions || userData.extendedMonths || {}
                     });
                 }
 
@@ -959,8 +1075,16 @@
                 let monthsHtml = '';
                 if (row.processedMonths.length > 0) {
                     monthsHtml = row.processedMonths.map(m => {
-                        return `<span class="month-badge">${m.name} (${m.remaining} يوم)</span>`;
-                    }).join('');
+                        const isExtended = !!(row.monthExtensions && row.monthExtensions[m.id]);
+                        const extendedDays = isExtended ? (row.monthExtensions[m.id].days || 3) : 0;
+                        let extendBadge = '';
+                        if (isExtended) {
+                            extendBadge = `<span class="tag-extended" title="تم تزويد أيام لهذا الشهر مسبقاً (+${extendedDays} يوم)"><i class="fas fa-check-circle"></i> تم التزويد (+${extendedDays}يوم)</span>`;
+                        } else {
+                            extendBadge = `<button class="btn-extend-badge" onclick="event.stopPropagation(); openExtendDaysModal('${row.uid}', '${m.id}', '${m.name.replace(/'/g, "\\'")}', ${m.remaining})" title="تزويد أيام لهذا الشهر"><i class="fas fa-plus"></i> تزويد</button>`;
+                        }
+                        return `<span class="month-badge" ${isExtended ? 'style="border-color:#27ae60;"' : ''}>${m.name} (${m.remaining} يوم) ${extendBadge}</span>`;
+                    }).join(' ');
                 } else {
                     monthsHtml = '<span class="no-date">--</span>';
                 }
@@ -982,6 +1106,9 @@
                 const isChecked = !row.isDisabled ? 'checked' : '';
                 const statusClass = !row.isDisabled ? 'text-active' : 'text-disabled';
                 const statusText = !row.isDisabled ? 'نشط' : 'معطل';
+
+                // التحقق من صلاحية تغيير الجهاز: مسموح فقط إذا كان لدى الطالب شهر متاح (نشط) لهذا المدرس
+                const canChangeDevice = isAdmin || (row.processedMonths && row.processedMonths.some(m => m.remaining > 0));
 
                 html += `
                     <tr>
@@ -1017,6 +1144,16 @@
                             <button class="btn-add-code" onclick="openActivationModal('${row.uid}', '${row.fullName}')" title="تفعيل كود للطالب">
                                 <i class="fas fa-key"></i> تفعيل
                             </button>
+                            <br>
+                            ${canChangeDevice ? `
+                            <button class="btn-add-code" style="background-color: #3498DB; margin-top: 5px;" onclick="clearDeviceDirectly('${row.uid}', this)" title="مسح الجهاز للسماح بالدخول">
+                                <i class="fas fa-eraser"></i> تغيير الجهاز
+                            </button>
+                            ` : `
+                            <button class="btn-add-code" style="background-color: #bdc3c7; color: #fff; cursor: not-allowed; margin-top: 5px;" onclick="alert('غير مسموح بتغيير الجهاز: يمكن تغيير الجهاز فقط للطلاب الذين لديهم شهر متاح (نشط) لدى المدرس.')" title="غير متاح: لا يوجد شهر متاح لهذا المدرس">
+                                <i class="fas fa-eraser"></i> تغيير الجهاز
+                            </button>
+                            `}
                         </td>
                     </tr>
                     <tr id="details-${row.uid}" class="details-row">
@@ -1033,6 +1170,10 @@
                                 <div>
                                     <span style="font-weight:bold; color:#555;">هاتف ولي الأمر: </span>
                                     <span class="copy-badge" onclick="copyData(this, '${row.parentPhone}')">${row.parentPhone} <i class="fas fa-copy"></i></span>
+                                </div>
+                                <div>
+                                    <span style="font-weight:bold; color:#555;">معرف الجهاز: </span>
+                                    <span class="copy-badge" id="device-text-${row.uid}" onclick="copyData(this, '${row.deviceId || 'غير معروف'}')">${row.deviceId || 'غير معروف'} <i class="fas fa-copy"></i></span>
                                 </div>
                             </div>
                         </td>
@@ -1150,12 +1291,26 @@
                 const codeData = codeSnap.val();
 
                 let allowedServers = [activeTeacher];
+                let allLinks = {};
+                let allMonths = {};
                 try {
-                    const linkSnap = await db.ref(`teacher_links/${activeTeacher}`).once('value');
-                    if (linkSnap.exists()) {
-                        const val = linkSnap.val();
+                    const [lSnap, mSnap] = await Promise.all([
+                        db.ref('teacher_links').once('value'),
+                        db.ref('months').once('value')
+                    ]);
+                    allLinks = lSnap.val() || {};
+                    allMonths = mSnap.val() || {};
+
+                    if (allLinks[activeTeacher]) {
+                        const val = allLinks[activeTeacher];
                         const list = Array.isArray(val) ? val : (typeof val === 'object' ? Object.keys(val) : [val]);
                         list.forEach(t => { if (t && t !== activeTeacher && !allowedServers.includes(t)) allowedServers.push(t); });
+                    }
+                    for (const [s, tgts] of Object.entries(allLinks)) {
+                        const list = Array.isArray(tgts) ? tgts : (typeof tgts === 'object' ? Object.keys(tgts) : [tgts]);
+                        if (list.includes(activeTeacher) && s !== activeTeacher && !allowedServers.includes(s)) {
+                            allowedServers.push(s);
+                        }
                     }
                 } catch(e) {}
 
@@ -1182,13 +1337,81 @@
                 updates[`codes/${code}/usedBy`] = uid;
                 updates[`users/${uid}/ncode`] = code;
 
+                // 1. تفعيل الشهور الأساسية للكود
                 monthsToActivate.forEach(monthId => {
                     updates[`student_month_access/${uid}/${monthId}`] = expiryTimestamp;
                 });
 
+                // 2. البحث عن المدرسين المرتبطين وتفعيل الشهور التي لها نفس الاسم
+                let linkedActivatedInfo = [];
+                try {
+                    const codeTeacher = codeData.server || activeTeacher;
+
+                    // استخراج المدرسين المرتبطين (سواء كان المدرس الحالي مصدراً أو مستهدفاً في الربط)
+                    const linkedTeachers = new Set();
+                    const findLinksFor = (tName) => {
+                        if (!tName) return;
+                        if (allLinks[tName]) {
+                            const val = allLinks[tName];
+                            const list = Array.isArray(val) ? val : (typeof val === 'object' ? Object.keys(val) : [val]);
+                            list.forEach(t => { if (t && t !== tName) linkedTeachers.add(t); });
+                        }
+                        for (const [s, tgts] of Object.entries(allLinks)) {
+                            const list = Array.isArray(tgts) ? tgts : (typeof tgts === 'object' ? Object.keys(tgts) : [tgts]);
+                            if (list.includes(tName) && s !== tName) linkedTeachers.add(s);
+                        }
+                    };
+
+                    findLinksFor(codeTeacher);
+                    if (activeTeacher && activeTeacher !== codeTeacher) {
+                        findLinksFor(activeTeacher);
+                    }
+
+                    if (linkedTeachers.size > 0) {
+                        // استخراج أسماء الشهور الأصلية المفعلة بالكود
+                        const activatedMonthNames = new Set();
+                        monthsToActivate.forEach(mId => {
+                            let mName = null;
+                            if (allMonths[codeTeacher] && allMonths[codeTeacher][mId] && allMonths[codeTeacher][mId].name) {
+                                mName = allMonths[codeTeacher][mId].name;
+                            } else {
+                                for (const [t, tMonths] of Object.entries(allMonths)) {
+                                    if (tMonths && tMonths[mId] && tMonths[mId].name) {
+                                        mName = tMonths[mId].name;
+                                        break;
+                                    }
+                                }
+                            }
+                            if (mName) {
+                                activatedMonthNames.add(mName.trim().toLowerCase());
+                            }
+                        });
+
+                        // البحث عن أي شهر بالاسم نفسه لدى المدرسين المرتبطين
+                        linkedTeachers.forEach(linkedTeacher => {
+                            const lMonths = allMonths[linkedTeacher] || {};
+                            for (const [lMId, lMData] of Object.entries(lMonths)) {
+                                if (lMData && lMData.name) {
+                                    const normTargetName = lMData.name.trim().toLowerCase();
+                                    if (activatedMonthNames.has(normTargetName)) {
+                                        updates[`student_month_access/${uid}/${lMId}`] = expiryTimestamp;
+                                        linkedActivatedInfo.push(`${linkedTeacher}: ${lMData.name}`);
+                                    }
+                                }
+                            }
+                        });
+                    }
+                } catch (linkErr) {
+                    console.warn("Error resolving linked teacher months:", linkErr);
+                }
+
                 await db.ref().update(updates);
 
-                alert("تم تفعيل الكود بنجاح!");
+                let successMsg = "تم تفعيل الكود بنجاح!";
+                if (linkedActivatedInfo.length > 0) {
+                    successMsg += "\n\nتم أيضاً تفعيل الشهور المطابقة لدى المدرسين المرتبطين تلقائياً:\n" + linkedActivatedInfo.join('\n');
+                }
+                alert(successMsg);
                 closeActivationModal();
                 initPage();
 
@@ -1393,6 +1616,263 @@
             } catch (error) {
                 console.error('Error changing password:', error);
                 alert(error.message || 'حدث خطأ أثناء تغيير كلمة المرور');
+            } finally {
+                btn.disabled = false;
+                btnText.style.display = 'inline-block';
+                loader.style.display = 'none';
+            }
+        };
+
+        // --- وظيفة تغيير الجهاز (نفس آلية control/admin.html للتنفيذ المتتالي والنظيف) ---
+        window.clearDeviceDirectly = async function(userId, btnElement) {
+            const student = allRowsData.find(u => u.uid === userId);
+            const hasAvailableMonth = isAdmin || (student && student.processedMonths && student.processedMonths.some(m => m.remaining > 0));
+            
+            if (!hasAvailableMonth) {
+                alert("غير مسموح بتغيير الجهاز: يسمح فقط بتغيير الجهاز للطلاب الذين لديهم شهر متاح (نشط) لدى المدرس!");
+                return;
+            }
+
+            if (!confirm("هل أنت متأكد من تغيير الجهاز لهذا الطالب؟ سيتم تسجيل خروجه فوراً والسماح له بالدخول من جهاز جديد.")) {
+                return;
+            }
+
+            const originalHtml = btnElement.innerHTML;
+            btnElement.innerHTML = '<i class="fas fa-spinner fa-spin"></i> جاري...';
+            btnElement.disabled = true;
+
+            try {
+                // الخطوة 1: تعطيل الحساب لإجبار التطبيق على الخروج النظيف
+                await db.ref(`users/${userId}`).update({ isDisabled: true });
+                
+                // الخطوة 2: مسح الجهاز لتصفير المعرف وكسر الجلسة
+                await db.ref(`users/${userId}`).update({ deviceId: "" });
+                
+                // الخطوة 3: التفعيل فوراً لإتاحة تسجيل الدخول من جهاز جديد
+                await db.ref(`users/${userId}`).update({ 
+                    isDisabled: false, 
+                    disableTimestamp: null 
+                });
+
+                if (student) {
+                    student.deviceId = "";
+                    student.isDisabled = false;
+                }
+
+                const deviceElem = document.getElementById(`device-text-${userId}`);
+                if (deviceElem) {
+                    deviceElem.innerHTML = 'غير معروف <i class="fas fa-copy"></i>';
+                    deviceElem.setAttribute('onclick', "copyData(this, 'غير معروف')");
+                }
+
+                const statusText = document.getElementById(`status-text-${userId}`);
+                if (statusText) {
+                    statusText.textContent = 'نشط';
+                    statusText.className = 'status-text text-active';
+                }
+
+                const switchInput = document.querySelector(`#details-${userId}`)?.previousElementSibling?.querySelector('input[type="checkbox"]');
+                if (switchInput) {
+                    switchInput.checked = true;
+                }
+
+                showSuccessToast('تم إجراء تسجيل الخروج وتصفير الجهاز بنجاح');
+            } catch(e) {
+                console.error(e);
+                alert('حدث خطأ أثناء تغيير الجهاز: ' + (e.message || e));
+            } finally {
+                btnElement.innerHTML = originalHtml;
+                btnElement.disabled = false;
+            }
+        };
+
+        // --- وظائف تزويد أيام للطالب (بحد أقصى 3 أيام ولمرة واحدة فقط لكل شهر) ---
+        let pendingExtendUid = null;
+        let pendingExtendMonthId = null;
+
+        window.selectDaysChoice = function(days) {
+            document.querySelectorAll('.btn-day-choice').forEach(btn => {
+                if (parseInt(btn.getAttribute('data-days')) === days) {
+                    btn.classList.add('active');
+                } else {
+                    btn.classList.remove('active');
+                }
+            });
+            document.getElementById('selectedExtendDays').value = days;
+        };
+
+        window.openExtendDaysModal = function(uid, monthId, monthName, currentRemaining) {
+            const student = allRowsData.find(u => u.uid === uid);
+            if (!student) return;
+
+            // التحقق مما إذا كان الطالب قد تم تزويده مسبقاً لهذا الشهر
+            if (student.monthExtensions && student.monthExtensions[monthId]) {
+                alert(`تم تزويد هذا الطالب مسبقاً لهذا الشهر (${monthName})، ولا يمكن تزويده مرة أخرى!`);
+                return;
+            }
+
+            pendingExtendUid = uid;
+            pendingExtendMonthId = monthId;
+
+            document.getElementById('extendStudentName').innerText = student.fullName;
+            
+            const select = document.getElementById('extendMonthSelect');
+            select.innerHTML = '';
+            
+            const opt = document.createElement('option');
+            opt.value = monthId;
+            opt.textContent = `${monthName} (${currentRemaining} يوم متبقي)`;
+            select.appendChild(opt);
+            select.value = monthId;
+            select.disabled = true;
+
+            document.getElementById('extendRemainingDays').innerText = currentRemaining;
+            selectDaysChoice(1);
+
+            document.getElementById('extendDaysModal').style.display = 'flex';
+        };
+
+        window.openExtendDaysQuick = function(uid) {
+            const student = allRowsData.find(u => u.uid === uid);
+            if (!student) return;
+
+            if (!student.processedMonths || student.processedMonths.length === 0) {
+                alert("لا يوجد شهور متاحة لهذا الطالب لتزويدها!");
+                return;
+            }
+
+            // تصفية الشهور التي لم يتم تزويدها بعد
+            const availableMonthsToExtend = student.processedMonths.filter(m => {
+                return !(student.monthExtensions && student.monthExtensions[m.id]);
+            });
+
+            if (availableMonthsToExtend.length === 0) {
+                alert("تم تزويد جميع الشهور المتاحة لهذا الطالب مسبقاً، ولا يمكن تزويده مرة أخرى!");
+                return;
+            }
+
+            pendingExtendUid = uid;
+            document.getElementById('extendStudentName').innerText = student.fullName;
+
+            const select = document.getElementById('extendMonthSelect');
+            select.innerHTML = '';
+            select.disabled = false;
+
+            availableMonthsToExtend.forEach(m => {
+                const opt = document.createElement('option');
+                opt.value = m.id;
+                opt.textContent = `${m.name} (${m.remaining} يوم متبقي)`;
+                select.appendChild(opt);
+            });
+
+            const firstMonth = availableMonthsToExtend[0];
+            pendingExtendMonthId = firstMonth.id;
+            select.value = firstMonth.id;
+            document.getElementById('extendRemainingDays').innerText = firstMonth.remaining;
+            selectDaysChoice(1);
+            document.getElementById('extendDaysModal').style.display = 'flex';
+        };
+
+        window.onExtendMonthChanged = function(monthId) {
+            pendingExtendMonthId = monthId;
+            const student = allRowsData.find(u => u.uid === pendingExtendUid);
+            if (student) {
+                const month = student.processedMonths.find(m => m.id === monthId);
+                if (month) {
+                    document.getElementById('extendRemainingDays').innerText = month.remaining;
+                }
+            }
+        };
+
+        window.closeExtendDaysModal = function() {
+            document.getElementById('extendDaysModal').style.display = 'none';
+            pendingExtendUid = null;
+            pendingExtendMonthId = null;
+        };
+
+        window.executeExtendDays = async function() {
+            const uid = pendingExtendUid;
+            const monthId = pendingExtendMonthId;
+            const daysToAdd = parseInt(document.getElementById('selectedExtendDays').value) || 1;
+
+            if (!uid || !monthId) {
+                alert("بيانات غير مكتملة!");
+                return;
+            }
+
+            if (isNaN(daysToAdd) || daysToAdd < 1 || daysToAdd > 3) {
+                alert("يرجى اختيار عدد الأيام بين 1 و 3 أيام!");
+                return;
+            }
+
+            const student = allRowsData.find(u => u.uid === uid);
+            if (!student) return;
+
+            if (student.monthExtensions && student.monthExtensions[monthId]) {
+                alert("تم تزويد هذا الشهر لهذا الطالب مسبقاً، ولا يمكن تزويده مرة أخرى إطلاقاً!");
+                closeExtendDaysModal();
+                return;
+            }
+
+            const targetMonth = student.processedMonths.find(m => m.id === monthId);
+            if (!targetMonth) {
+                alert("الشهر غير موجود في قائمة الشهور المتاحة للطالب!");
+                return;
+            }
+
+            const confirmMsg = `هل أنت متأكد من تزويد الطالب (${student.fullName}) بـ (${daysToAdd} أيام) لشهر (${targetMonth.name})؟\n\nتنبيه: لن تتمكن من تزويد هذا الشهر لهذا الطالب مرة أخرى!`;
+            if (!confirm(confirmMsg)) {
+                return;
+            }
+
+            const btn = document.getElementById('confirmExtendDaysBtn');
+            const btnText = document.getElementById('confirm-extend-text');
+            const loader = document.getElementById('confirm-extend-loader');
+
+            btn.disabled = true;
+            btnText.style.display = 'none';
+            loader.style.display = 'inline-block';
+
+            try {
+                const currentExpiry = targetMonth.expiry || 0;
+                const now = Date.now();
+                const baseTimestamp = (currentExpiry && currentExpiry > now) ? currentExpiry : now;
+                const addedMs = daysToAdd * 24 * 60 * 60 * 1000;
+                const newExpiry = baseTimestamp + addedMs;
+
+                const extensionRecord = {
+                    days: daysToAdd,
+                    extendedAt: now,
+                    extendedBy: activeTeacher || 'المدرس',
+                    oldExpiry: currentExpiry,
+                    newExpiry: newExpiry
+                };
+
+                const updates = {};
+                updates[`student_month_access/${uid}/${monthId}`] = newExpiry;
+                updates[`users/${uid}/month_extensions/${monthId}`] = extensionRecord;
+
+                try {
+                    await db.ref().update(updates);
+                } catch (updateErr) {
+                    await db.ref(`student_month_access/${uid}/${monthId}`).set(newExpiry);
+                    await db.ref(`users/${uid}/month_extensions/${monthId}`).set(extensionRecord);
+                }
+
+                if (!student.monthExtensions) student.monthExtensions = {};
+                student.monthExtensions[monthId] = extensionRecord;
+
+                targetMonth.expiry = newExpiry;
+                targetMonth.remaining = Math.max(0, Math.ceil((newExpiry - Date.now()) / (1000 * 60 * 60 * 24)));
+                targetMonth.isExtended = true;
+
+                closeExtendDaysModal();
+                filterAndRender();
+                showSuccessToast(`تم تزويد الطالب ${daysToAdd} أيام لشهر (${targetMonth.name}) بنجاح`);
+
+            } catch (err) {
+                console.error("Error extending days:", err);
+                alert("حدث خطأ أثناء تزويد الأيام: " + (err.message || err));
             } finally {
                 btn.disabled = false;
                 btnText.style.display = 'inline-block';
